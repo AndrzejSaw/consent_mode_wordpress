@@ -178,6 +178,29 @@ class Admin {
 			]
 		);
 
+		// ---- Debug Section ----
+		add_settings_section(
+			'consent_mode_debug_section',
+			__( 'Developer / Debug', 'consent-mode' ),
+			function() {
+				echo '<p class="description">' . esc_html__( 'Enable JS console logging for the consent banner. Disable on production.', 'consent-mode' ) . '</p>';
+			},
+			'consent-mode-settings'
+		);
+
+		add_settings_field(
+			'debug_mode',
+			__( 'Debug Mode (console.log)', 'consent-mode' ),
+			[ $this, 'render_checkbox_field' ],
+			'consent-mode-settings',
+			'consent_mode_debug_section',
+			[
+				'label_for' => 'debug_mode',
+				'name'      => 'consent_mode_settings[debug_mode]',
+				'value'     => $this->get_option( 'debug_mode', false ),
+			]
+		);
+
 		// Multilingual Content Section.
 		// NOTE: Fields are rendered manually inside render_content_section() using
 		// a tabbed UI. We do NOT use add_settings_field() for content fields so
@@ -495,6 +518,9 @@ class Admin {
 	 */
 	public function sanitize_settings( $input ): array {
 		$sanitized = [];
+
+		// Debug mode flag.
+		$sanitized['debug_mode'] = ! empty( $input['debug_mode'] );
 
 		// GTM settings.
 		$sanitized['inject_gtm_loader'] = ! empty( $input['inject_gtm_loader'] );

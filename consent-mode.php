@@ -3,7 +3,7 @@
  * Plugin Name: Universal Consent Mode
  * Plugin URI: https://example.com/universal-consent-mode
  * Description: Universal WordPress plugin for Google Consent Mode v2 with multilingual support (EN, RU, UA, PL) and GDPR/PKE compliance for EU/EEA.
- * Version: 1.1.1
+ * Version: 1.1.4
  * Requires at least: 6.2
  * Requires PHP: 8.1
  * Author: Your Name
@@ -26,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin version.
  */
-define( 'CONSENT_MODE_VERSION', '1.1.1' );
+define( 'CONSENT_MODE_VERSION', '1.1.4' );
 
 /**
  * Plugin directory path.

@@ -123,9 +123,11 @@ class Bootstrap {
 	gtag('set', 'wait_for_update', <?php echo esc_js( $wait_for_update ); ?>);
 	<?php endif; ?>
 	
-	// Log consent mode initialization (development only).
+	// Log consent mode initialization (always visible for diagnostics).
 	if (window.console && typeof console.log === 'function') {
 		console.log('[Consent Mode] Default consent state initialized:', <?php echo wp_json_encode( $default_consent ); ?>);
+		console.log('[Consent Mode] consentMode config:', window.consentMode || '(not yet loaded — will be set by banner.js localize)');
+		console.log('[Consent Mode] cookie in browser:', document.cookie || '(empty – first visit or incognito)');
 	}
 })();
 </script>

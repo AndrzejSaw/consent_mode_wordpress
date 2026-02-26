@@ -105,6 +105,15 @@ class Front {
 				],
 				// All UI strings for the active locale, resolved server-side.
 				'i18n'   => $this->get_i18n_strings(),
+				// Debug mode: enables console.log output in banner.js.
+				// Priority: DB setting > WP_DEBUG > filter.
+				// Toggle via: Consent Mode → Settings → Debug Mode checkbox.
+				// Or via: add_filter( 'consent_mode_debug', '__return_true' );
+				'debug'  => (bool) apply_filters(
+					'consent_mode_debug',
+					! empty( get_option( 'consent_mode_settings', [] )['debug_mode'] )
+					|| ( defined( 'WP_DEBUG' ) && WP_DEBUG )
+				),
 			]
 		);
 	}

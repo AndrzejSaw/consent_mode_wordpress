@@ -28,6 +28,28 @@
 	 */
 	const COOKIE_NAME = window.consentMode?.cookie?.name ?? 'consent_preferences';
 
+	/**
+	 * Debug mode flag.
+	 * Enable by setting window.consentMode.debug = true in wp-config.php or
+	 * via the browser console: window.consentMode.debug = true;
+	 *
+	 * @type {boolean}
+	 */
+	const DEBUG = !! window.consentMode?.debug; // truthy: accepts true, 1, "1", "true"
+
+	/**
+	 * Conditional debug logger.
+	 *
+	 * @param {...*} args
+	 * @returns {void}
+	 */
+	function dbg( ...args ) {
+		if ( DEBUG ) {
+			// eslint-disable-next-line no-console
+			console.log( '[ConsentMode]', ...args );
+		}
+	}
+
 	// -----------------------------------------------------------------------
 	// Consent data factories
 	// -----------------------------------------------------------------------
@@ -103,8 +125,12 @@
 	 * @returns {void}
 	 */
 	function pushConsentUpdate( consentData ) {
+		dbg( 'pushConsentUpdate()', consentData );
 		if ( typeof window.gtag === 'function' ) {
 			window.gtag( 'consent', 'update', consentData );
+			dbg( 'gtag consent update sent' );
+		} else {
+			dbg( 'gtag not available – skipped' );
 		}
 	}
 
@@ -140,7 +166,9 @@
 			'SameSite=Lax',
 		].join( '; ' );
 
+		dbg( 'saveConsentCookie()', { cookieName: COOKIE_NAME, days, cookieStr } );
 		document.cookie = cookieStr;
+		dbg( 'cookie written; readback →', document.cookie );
 	}
 
 	/**
@@ -156,22 +184,27 @@
 		const prefix = COOKIE_NAME + '=';
 		const parts  = document.cookie.split( ';' );
 
+		dbg( 'readConsentCookie() — all cookies:', document.cookie );
+
 		for ( let i = 0; i < parts.length; i++ ) {
 			const part = parts[ i ].trimStart();
 			if ( part.startsWith( prefix ) ) {
 				const raw = part.slice( prefix.length );
 				try {
 					const parsed = JSON.parse( decodeURIComponent( raw ) );
+					dbg( 'readConsentCookie() — parsed OK:', parsed );
 					return parsed;
-				} catch {
+				} catch ( err ) {
 					// Malformed value (e.g. old bug where expires= was concatenated
 					// into the cookie value). Delete it so banner re-appears.
+					dbg( 'readConsentCookie() — malformed cookie, deleting. Raw value:', raw, 'Error:', err );
 					document.cookie = `${ COOKIE_NAME }=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
 					return null;
 				}
 			}
 		}
 
+		dbg( 'readConsentCookie() — cookie not found (first visit or deleted)' );
 		return null;
 	}
 
@@ -196,6 +229,8 @@
 		].join( ', ' );
 
 		const placeholders = document.querySelectorAll( selector );
+
+		dbg( `reactivateByCategory('${ category }') — found ${ placeholders.length } blocked script(s)` );
 
 		if ( ! placeholders.length ) {
 			return;
@@ -288,6 +323,8 @@
 	 * @returns {void}
 	 */
 	function applyConsent( consentData ) {
+		dbg( 'applyConsent() called with:', consentData );
+
 		// 1. Update Google Consent Mode via gtag().
 		pushConsentUpdate( consentData );
 
@@ -310,6 +347,7 @@
 
 		// 5. Notify other scripts (theme integrations etc.).
 		document.dispatchEvent( new CustomEvent( 'ruConsentUpdated', { detail: consentData } ) );
+		dbg( 'applyConsent() — done; event ruConsentUpdated dispatched' );
 	}
 
 	// -----------------------------------------------------------------------
@@ -518,8 +556,13 @@
 	 * @returns {void}
 	 */
 	function checkExistingConsent() {
+		dbg( 'checkExistingConsent() — checking for stored cookie…' );
 		const consentData = readConsentCookie();
-		if ( ! consentData ) { return; }
+		if ( ! consentData ) {
+			dbg( 'checkExistingConsent() — no cookie found, banner will be shown' );
+			return;
+		}
+		dbg( 'checkExistingConsent() — restoring from cookie:', consentData );
 
 		// Silently push the stored consent to GCMv2 (session restore).
 		pushConsentUpdate( consentData );
@@ -560,6 +603,9 @@
 	 * @returns {void}
 	 */
 	function init() {
+		// Startup marker — visible only when debug=true.
+		dbg( 'banner.js loaded. debug=', window.consentMode?.debug, '| cookie=', document.cookie || '(empty)' );
+		dbg( 'init() — Consent Mode banner initialising. Config:', window.consentMode );
 		attachEventListeners();
 		checkExistingConsent();
 		checkRevocationButton();
@@ -571,8 +617,10 @@
 		const revokeBtn = document.getElementById( 'ru-consent-revoke' );
 		const bothHidden = ( ! banner || banner.hidden ) && ( ! revokeBtn || revokeBtn.hidden );
 		if ( bothHidden ) {
+			dbg( 'init() — safeguard triggered: both banner and revoke are hidden, forcing banner visible' );
 			if ( banner ) { banner.hidden = false; }
 		}
+		dbg( 'init() — complete. banner.hidden=', banner?.hidden, 'revokeBtn.hidden=', revokeBtn?.hidden );
 	}
 
 	// Run on DOM ready.
