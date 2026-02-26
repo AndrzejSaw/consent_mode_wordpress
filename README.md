@@ -1,4 +1,4 @@
-﻿# Universal Consent Mode (GCMv2)
+# Universal Consent Mode (GCMv2)
 
 [![WordPress](https://img.shields.io/badge/WordPress-6.2%2B-blue)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple)](https://www.php.net/)
@@ -6,9 +6,9 @@
 [![Google Consent Mode v2](https://img.shields.io/badge/Google%20Consent%20Mode-v2-orange)](https://developers.google.com/tag-platform/security/guides/consent)
 [![GDPR](https://img.shields.io/badge/GDPR-compliant-brightgreen)](https://gdpr.eu/)
 
-**Universal WordPress plugin for Google Consent Mode v2** â€” multilingual (EN, RU, UA, PL), stateless (No-DB), GDPR and Polish PKE 2024 compliant.
+**Universal WordPress plugin for Google Consent Mode v2** – multilingual (EN, RU, UA, PL), stateless (No-DB), GDPR and Polish PKE 2024 compliant.
 
-> đź‡µđź‡± **Dokumentacja w jÄ™zyku polskim:** [README_PL.md](README_PL.md)
+> 🇵🇱 **Dokumentacja w języku polskim:** [README_PL.md](README_PL.md)
 
 ---
 
@@ -16,14 +16,14 @@
 
 - **3-button consent model**: Essential Only / Marketing / Accept All + Customize modal
 - **Native `<dialog>`** for granular per-category preferences (no polyfill required)
-- **No-DB Architecture**: consent stored in `consent_preferences` cookie only â€” no SQL tables
+- **No-DB Architecture**: consent stored in `consent_preferences` cookie only – no SQL tables
 - **Google Consent Mode v2**: `gtag('consent', 'default'|'update', ...)` with all 7 parameters
 - **Google Tag Manager**: optional auto-loading, validated GTM ID, noscript fallback
 - **Script Guard**: blocks tracking scripts until consent, dual-attribute (`data-consent-category` + `data-rcm-consent`), auto-reactivation
-- **4 Languages**: EN, RU, UA, PL â€” auto-detected from WordPress locale (WPML/Polylang compatible)
+- **4 Languages**: EN, RU, UA, PL – auto-detected from WordPress locale (WPML/Polylang compatible)
 - **Admin Language Manager**: tabbed UI to edit all banner/modal texts per language
-- **Revocation button**: permanent floating button on every page (GDPR Art. 7 compliant)
-- **Geolocation**: Cloudflare headers / WP timezone fallback â€” strict mode for EU/EEA users
+- **Revocation button**: permanent floating cookie button on every page (GDPR Art. 7 compliant)
+- **Geolocation**: Cloudflare headers / WP timezone fallback – strict mode for EU/EEA users
 - **Accessibility**: ARIA roles, native focus trap, `:focus-visible` outlines
 
 ## Requirements
@@ -34,7 +34,7 @@
 ## Quick Setup
 
 1. Activate plugin (`consent-mode.php`)
-2. Go to **Settings â†’ Consent Mode Settings**
+2. Go to **Settings → Consent Mode Settings**
 3. Configure GTM Container ID (if needed)
 4. Add script handles to Script Guard categories
 5. Customize banner text in Language Manager tab
@@ -66,25 +66,25 @@ window.ConsentBanner.readConsentCookie();
 
 ```
 consent-mode/
-â”śâ”€â”€ consent-mode.php              â† Main plugin file (v1.1.0+)
-â”śâ”€â”€ src/
-â”‚   â”śâ”€â”€ Admin/Admin.php           â† Settings API, Language Manager
-â”‚   â”śâ”€â”€ Consent/Bootstrap.php     â† GCMv2 default state + GTM loader
-â”‚   â”śâ”€â”€ Consent/Consent.php       â† Stateless cookie reader
-â”‚   â”śâ”€â”€ Front/Front.php           â† Banner rendering, assets, i18n
-â”‚   â”śâ”€â”€ Front/ScriptGuard.php     â† Script blocking/reactivation
-â”‚   â””â”€â”€ Geo/Geo.php               â† Country detection
-â”śâ”€â”€ assets/
-â”‚   â”śâ”€â”€ css/banner.css
-â”‚   â””â”€â”€ js/banner.js              â† ES6+, no jQuery, no AJAX
-â””â”€â”€ docs/POLITYKA_COOKIES.md      â† Cookie policy template (Polish)
+├── consent-mode.php              ← Main plugin file (v1.1.0+)
+├── src/
+│   ├── Admin/Admin.php           ← Settings API, Language Manager
+│   ├── Consent/Bootstrap.php     ← GCMv2 default state + GTM loader
+│   ├── Consent/Consent.php       ← Stateless cookie reader
+│   ├── Front/Front.php           ← Banner rendering, assets, i18n
+│   ├── Front/ScriptGuard.php     ← Script blocking/reactivation
+│   └── Geo/Geo.php               ← Country detection
+├── assets/
+│   ├── css/banner.css
+│   └── js/banner.js              ← ES6+, no jQuery, no AJAX
+└── docs/POLITYKA_COOKIES.md      ← Cookie policy template (Polish)
 ```
 
 ## Documentation
 
-- đź‡µđź‡± **Polish**: [README_PL.md](README_PL.md) â€” full documentation including GDPR/PKE compliance and cookie policy template
-- đź“‹ **Changelog**: [CHANGELOG.md](CHANGELOG.md)
-- đźŤŞ **Cookie Policy (PL)**: [docs/POLITYKA_COOKIES.md](docs/POLITYKA_COOKIES.md)
+- 🇵🇱 **Polish**: [README_PL.md](README_PL.md) – full documentation including GDPR/PKE compliance and cookie policy template
+- 📋 **Changelog**: [CHANGELOG.md](CHANGELOG.md)
+- 🍪 **Cookie Policy (PL)**: [docs/POLITYKA_COOKIES.md](docs/POLITYKA_COOKIES.md)
 
 ## License
 
