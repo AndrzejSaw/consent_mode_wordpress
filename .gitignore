@@ -1,0 +1,24 @@
+# Composer - не коммитим зависимости, только файл конфигурации
+vendor/
+composer.lock
+
+# WordPress/Системное
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+error_log
+
+# Инструменты разработки и тесты
+.phpunit.result.cache
+/tests/_output/
+/tests/_support/_generated/
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+repomix-output.xml

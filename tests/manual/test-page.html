@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RU Consent Mode - Test Page</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0073aa;
+            border-bottom: 3px solid #0073aa;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-left: 4px solid #0073aa;
+        }
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .test-result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .test-result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .test-result.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background: #0073aa;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005177;
+        }
+        code {
+            background: #e7e7e7;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f8;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 RU Consent Mode - Test Page</h1>
+        <p>This page helps you test the Google Consent Mode v2 integration.</p>
+
+        <!-- Test 1: Check dataLayer -->
+        <div class="test-section">
+            <h2>Test 1: dataLayer Initialization</h2>
+            <p>Checking if <code>window.dataLayer</code> exists and is initialized...</p>
+            <div id="test1-result"></div>
+            <button onclick="runTest1()">Run Test</button>
+        </div>
+
+        <!-- Test 2: Check gtag function -->
+        <div class="test-section">
+            <h2>Test 2: gtag() Function</h2>
+            <p>Checking if <code>window.gtag</code> function is available...</p>
+            <div id="test2-result"></div>
+            <button onclick="runTest2()">Run Test</button>
+        </div>
+
+        <!-- Test 3: Check default consent -->
+        <div class="test-section">
+            <h2>Test 3: Default Consent State</h2>
+            <p>Checking if default consent state is set correctly...</p>
+            <div id="test3-result"></div>
+            <button onclick="runTest3()">Run Test</button>
+        </div>
+
+        <!-- Test 4: Check GTM -->
+        <div class="test-section">
+            <h2>Test 4: Google Tag Manager</h2>
+            <p>Checking if GTM container is loaded...</p>
+            <div id="test4-result"></div>
+            <button onclick="runTest4()">Run Test</button>
+        </div>
+
+        <!-- Test 5: Update consent -->
+        <div class="test-section">
+            <h2>Test 5: Consent Update</h2>
+            <p>Testing consent update functionality...</p>
+            <div id="test5-result"></div>
+            <button onclick="updateConsentGranted()">Grant All Consent</button>
+            <button onclick="updateConsentDenied()">Deny All Consent</button>
+        </div>
+
+        <!-- Test 6: View dataLayer -->
+        <div class="test-section">
+            <h2>Test 6: View dataLayer Contents</h2>
+            <p>Display all events in dataLayer...</p>
+            <div id="test6-result"></div>
+            <button onclick="viewDataLayer()">View dataLayer</button>
+        </div>
+
+        <!-- Console Log -->
+        <div class="test-section">
+            <h2>📋 Console Log</h2>
+            <p>Check browser console (F12) for detailed logs.</p>
+            <div id="console-log" style="max-height: 300px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Test 1: Check dataLayer
+        function runTest1() {
+            const result = document.getElementById('test1-result');
+            
+            if (typeof window.dataLayer !== 'undefined' && Array.isArray(window.dataLayer)) {
+                result.innerHTML = `
+                    <div class="test-result success">
+                        ✅ SUCCESS: dataLayer exists and is an array<br>
+                        Length: ${window.dataLayer.length} events
+                    </div>
+                `;
+                console.log('✅ Test 1 PASSED:', window.dataLayer);
+            } else {
+                result.innerHTML = `
+                    <div class="test-result error">
+                        ❌ ERROR: dataLayer not found or not an array
+                    </div>
+                `;
+                console.error('❌ Test 1 FAILED');
+            }
+        }
+
+        // Test 2: Check gtag function
+        function runTest2() {
+            const result = document.getElementById('test2-result');
+            
+            if (typeof window.gtag === 'function') {
+                result.innerHTML = `
+                    <div class="test-result success">
+                        ✅ SUCCESS: gtag() function is available
+                    </div>
+                `;
+                console.log('✅ Test 2 PASSED: gtag function exists');
+            } else {
+                result.innerHTML = `
+                    <div class="test-result error">
+                        ❌ ERROR: gtag() function not found
+                    </div>
+                `;
+                console.error('❌ Test 2 FAILED');
+            }
+        }
+
+        // Test 3: Check default consent
+        function runTest3() {
+            const result = document.getElementById('test3-result');
+            
+            // Look for consent default event in dataLayer
+            const consentEvents = window.dataLayer.filter(item => 
+                Array.isArray(item) && item[0] === 'consent' && item[1] === 'default'
+            );
+            
+            if (consentEvents.length > 0) {
+                const consentState = consentEvents[0][2];
+                result.innerHTML = `
+                    <div class="test-result success">
+                        ✅ SUCCESS: Default consent state found<br>
+                        <pre>${JSON.stringify(consentState, null, 2)}</pre>
+                    </div>
+                `;
+                console.log('✅ Test 3 PASSED:', consentState);
+            } else {
+                result.innerHTML = `
+                    <div class="test-result error">
+                        ❌ ERROR: Default consent state not found in dataLayer
+                    </div>
+                `;
+                console.error('❌ Test 3 FAILED');
+            }
+        }
+
+        // Test 4: Check GTM
+        function runTest4() {
+            const result = document.getElementById('test4-result');
+            
+            if (typeof window.google_tag_manager !== 'undefined') {
+                const containers = Object.keys(window.google_tag_manager);
+                result.innerHTML = `
+                    <div class="test-result success">
+                        ✅ SUCCESS: GTM is loaded<br>
+                        Containers: ${containers.join(', ')}
+                    </div>
+                `;
+                console.log('✅ Test 4 PASSED:', window.google_tag_manager);
+            } else {
+                result.innerHTML = `
+                    <div class="test-result info">
+                        ℹ️ INFO: GTM not detected (may not be configured)
+                    </div>
+                `;
+                console.warn('⚠️ Test 4: GTM not found (check if inject_gtm_loader is enabled)');
+            }
+        }
+
+        // Test 5: Update consent (Grant)
+        function updateConsentGranted() {
+            if (typeof gtag !== 'function') {
+                alert('gtag() function not available');
+                return;
+            }
+
+            gtag('consent', 'update', {
+                'ad_storage': 'granted',
+                'ad_user_data': 'granted',
+                'ad_personalization': 'granted',
+                'analytics_storage': 'granted',
+                'personalization_storage': 'granted'
+            });
+
+            document.getElementById('test5-result').innerHTML = `
+                <div class="test-result success">
+                    ✅ Consent updated: All granted<br>
+                    Check dataLayer for consent update event
+                </div>
+            `;
+            console.log('✅ Consent updated: All granted');
+        }
+
+        // Test 5: Update consent (Deny)
+        function updateConsentDenied() {
+            if (typeof gtag !== 'function') {
+                alert('gtag() function not available');
+                return;
+            }
+
+            gtag('consent', 'update', {
+                'ad_storage': 'denied',
+                'ad_user_data': 'denied',
+                'ad_personalization': 'denied',
+                'analytics_storage': 'denied',
+                'personalization_storage': 'denied'
+            });
+
+            document.getElementById('test5-result').innerHTML = `
+                <div class="test-result success">
+                    ✅ Consent updated: All denied<br>
+                    Check dataLayer for consent update event
+                </div>
+            `;
+            console.log('✅ Consent updated: All denied');
+        }
+
+        // Test 6: View dataLayer
+        function viewDataLayer() {
+            const result = document.getElementById('test6-result');
+            
+            if (typeof window.dataLayer !== 'undefined') {
+                result.innerHTML = `
+                    <div class="test-result info">
+                        <strong>dataLayer contents (${window.dataLayer.length} events):</strong>
+                        <pre>${JSON.stringify(window.dataLayer, null, 2)}</pre>
+                    </div>
+                `;
+                console.log('dataLayer:', window.dataLayer);
+            } else {
+                result.innerHTML = `
+                    <div class="test-result error">
+                        ❌ dataLayer not found
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 RU Consent Mode Test Page Loaded');
+            
+            // Wait a bit for scripts to load
+            setTimeout(() => {
+                console.log('Running automatic tests...');
+                runTest1();
+                runTest2();
+                runTest3();
+                runTest4();
+            }, 1000);
+        });
+
+        // Capture console logs
+        const originalLog = console.log;
+        const consoleLogDiv = document.getElementById('console-log');
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            const logEntry = document.createElement('div');
+            logEntry.style.padding = '5px';
+            logEntry.style.borderBottom = '1px solid #ddd';
+            logEntry.style.fontFamily = 'monospace';
+            logEntry.style.fontSize = '12px';
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            
+            if (consoleLogDiv) {
+                consoleLogDiv.insertBefore(logEntry, consoleLogDiv.firstChild);
+            }
+        };
+    </script>
+</body>
+</html>
