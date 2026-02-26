@@ -115,8 +115,9 @@
 	/**
 	 * Persist consent data in the consent_preferences cookie.
 	 *
-	 * Cookie attributes are taken from consentMode.cookie config injected
-	 * by wp_localize_script() so they match server-side settings exactly.
+	 * Domain is intentionally omitted — the browser binds it to the exact
+	 * origin automatically, which is the most cross-browser compatible approach.
+	 * Explicit domain= can cause issues on some hosts (leading-dot vs no-dot).
 	 *
 	 * @param {Object} consentData
 	 * @returns {void}
@@ -128,20 +129,26 @@
 		const expires = new Date();
 		expires.setTime( expires.getTime() + days * 24 * 60 * 60 * 1000 );
 
-		// Build cookie string with proper '; ' separators.
-		// NOTE: prior version used .join('') which concatenated 'expires=DATE'
-		// directly into the cookie value — making it unparseable on reload.
-		const parts = [
-			`${ COOKIE_NAME }=${ encodeURIComponent( JSON.stringify( consentData ) ) }`,
+		const value = encodeURIComponent( JSON.stringify( consentData ) );
+
+		// Use minimal, maximally-compatible cookie string.
+		// No domain= — browser uses current origin automatically.
+		const cookieStr = [
+			`${ COOKIE_NAME }=${ value }`,
 			`expires=${ expires.toUTCString() }`,
-			`path=${ cfg.path || '/' }`,
-		];
+			'path=/',
+			'SameSite=Lax',
+		].join( '; ' );
 
-		if ( cfg.domain ) { parts.push( `domain=${ cfg.domain }` ); }
-		if ( cfg.secure  ) { parts.push( 'Secure' ); }
-		parts.push( `SameSite=${ cfg.sameSite ?? 'Lax' }` );
+		document.cookie = cookieStr;
 
-		document.cookie = parts.join( '; ' );
+		// Verify the cookie was actually saved.
+		const verify = readConsentCookie();
+		if ( verify ) {
+			console.log( '[Consent Mode] Cookie saved OK:', verify );
+		} else {
+			console.warn( '[Consent Mode] Cookie save FAILED — document.cookie may be blocked.' );
+		}
 	}
 
 	/**
@@ -160,10 +167,14 @@
 		for ( let i = 0; i < parts.length; i++ ) {
 			const part = parts[ i ].trimStart();
 			if ( part.startsWith( prefix ) ) {
+				const raw = part.slice( prefix.length );
 				try {
-					return JSON.parse( decodeURIComponent( part.slice( prefix.length ) ) );
+					const parsed = JSON.parse( decodeURIComponent( raw ) );
+					return parsed;
 				} catch {
-					// Malformed value — delete the cookie so the banner shows again.
+					// Malformed value (e.g. old bug where expires= was concatenated
+					// into the cookie value). Delete it so banner re-appears.
+					console.warn( '[Consent Mode] Malformed cookie, deleting. Raw value:', raw );
 					document.cookie = `${ COOKIE_NAME }=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
 					return null;
 				}
@@ -541,6 +552,8 @@
 		const banner      = document.getElementById( 'ru-consent-banner' );
 		const revokeBtn   = document.getElementById( 'ru-consent-revoke' );
 
+		console.log( '[Consent Mode] checkRevocationButton — cookie:', consentData, '| banner.hidden:', banner?.hidden, '| revokeBtn exists:', !! revokeBtn );
+
 		if ( ! revokeBtn ) { return; }
 
 		// Show revoke button when consent cookie exists and banner is hidden/absent.
@@ -549,6 +562,7 @@
 			void revokeBtn.offsetWidth;
 			revokeBtn.hidden = false;
 			revokeBtn.classList.add( 'ru-consent-revoke--visible' );
+			console.log( '[Consent Mode] Revoke button shown.' );
 		}
 	}
 
