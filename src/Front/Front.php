@@ -124,15 +124,10 @@ class Front {
 	 */
 	public function render_banner(): void {
 		$cookie_name = \ConsentMode\Consent\Consent::COOKIE_NAME;
+		$has_cookie  = isset( $_COOKIE[ $cookie_name ] );
 
-		// Returning visitor: banner hidden, only revoke button shown.
-		if ( isset( $_COOKIE[ $cookie_name ] ) ) {
-			$this->render_revocation_button();
-			return;
-		}
-
-		// Always render revoke button (hidden via CSS until consent is given).
-		$this->render_revocation_button(); // Render it anyway, JS controls visibility.
+		// Revoke button — always rendered, visibility controlled by JS.
+		$this->render_revocation_button();
 
 		// Resolve locale and pick the correct i18n strings.
 		$txt = $this->get_i18n_strings();
@@ -142,12 +137,15 @@ class Front {
 
 		?>
 		<!-- Consent Mode: Banner -->
+		<!-- Banner is always in DOM so JS can re-show it via the revoke button. -->
+		<!-- PHP adds hidden attr for returning visitors; JS removes it on revoke. -->
 		<div id="ru-consent-banner"
 		     class="ru-consent-banner"
 		     role="dialog"
 		     aria-labelledby="ru-consent-title"
 		     aria-describedby="ru-consent-description"
-		     aria-modal="true">
+		     aria-modal="true"
+		     <?php echo $has_cookie ? 'hidden' : ''; ?>>
 			<div class="ru-consent-container">
 				<div class="ru-consent-content">
 					<h2 id="ru-consent-title" class="ru-consent-title">
@@ -441,15 +439,13 @@ class Front {
 	 */
 	public function render_revocation_button() {
 		?>
-		<button id="ru-consent-revoke" class="ru-consent-revoke" title="<?php echo esc_attr__( 'Cookie Settings', 'consent-mode' ); ?>" hidden>
-			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-				<path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"></path>
-				<path d="M8.5 8.5v.01"></path>
-				<path d="M16 15.5v.01"></path>
-				<path d="M12 12v.01"></path>
-				<path d="M11 17v.01"></path>
-				<path d="M7 14v.01"></path>
-			</svg>
+		<button id="ru-consent-revoke"
+		        class="ru-consent-revoke"
+		        title="<?php echo esc_attr__( 'Cookie Settings', 'consent-mode' ); ?>"
+		        aria-label="<?php echo esc_attr__( 'Cookie Settings', 'consent-mode' ); ?>"
+		        hidden>
+			<span class="ru-consent-revoke__icon" aria-hidden="true">🍪</span>
+			<span class="ru-consent-revoke__label"><?php echo esc_html__( 'Cookie', 'consent-mode' ); ?></span>
 		</button>
 		<?php
 	}

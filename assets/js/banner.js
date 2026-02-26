@@ -128,20 +128,28 @@
 		const expires = new Date();
 		expires.setTime( expires.getTime() + days * 24 * 60 * 60 * 1000 );
 
-		const path     = cfg.path    ? `;path=${ cfg.path }` : ';path=/';
-		const domain   = cfg.domain  ? `;domain=${ cfg.domain }` : '';
-		const secure   = cfg.secure  ? ';Secure'                  : '';
-		const sameSite = `;SameSite=${ cfg.sameSite ?? 'Lax' }`;
-
-		document.cookie = [
+		// Build cookie string with proper '; ' separators.
+		// NOTE: prior version used .join('') which concatenated 'expires=DATE'
+		// directly into the cookie value — making it unparseable on reload.
+		const parts = [
 			`${ COOKIE_NAME }=${ encodeURIComponent( JSON.stringify( consentData ) ) }`,
 			`expires=${ expires.toUTCString() }`,
-			path, domain, secure, sameSite,
-		].join( '' );
+			`path=${ cfg.path || '/' }`,
+		];
+
+		if ( cfg.domain ) { parts.push( `domain=${ cfg.domain }` ); }
+		if ( cfg.secure  ) { parts.push( 'Secure' ); }
+		parts.push( `SameSite=${ cfg.sameSite ?? 'Lax' }` );
+
+		document.cookie = parts.join( '; ' );
 	}
 
 	/**
 	 * Read and parse the consent cookie.
+	 *
+	 * If the stored value is unparseable (e.g. malformed from a previous bug
+	 * where expires= was concatenated into the value), the bad cookie is deleted
+	 * so the banner re-appears on the next page load instead of silently failing.
 	 *
 	 * @returns {Object|null} Parsed consent object, or null if absent / invalid.
 	 */
@@ -155,6 +163,8 @@
 				try {
 					return JSON.parse( decodeURIComponent( part.slice( prefix.length ) ) );
 				} catch {
+					// Malformed value — delete the cookie so the banner shows again.
+					document.cookie = `${ COOKIE_NAME }=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
 					return null;
 				}
 			}
@@ -305,7 +315,7 @@
 	// -----------------------------------------------------------------------
 
 	/**
-	 * Animate-out and hide the consent banner; show revoke button.
+	 * Animate-out and hide the consent banner; show revoke button with pop-in.
 	 *
 	 * @returns {void}
 	 */
@@ -320,7 +330,14 @@
 		setTimeout( () => {
 			banner.hidden = true;
 			banner.classList.remove( 'ru-consent-banner--hiding' );
-			if ( revokeBtn ) { revokeBtn.hidden = false; }
+			if ( revokeBtn ) {
+				// Reset animation so it plays fresh each time.
+				revokeBtn.classList.remove( 'ru-consent-revoke--visible' );
+				// Force reflow to restart the CSS animation.
+				void revokeBtn.offsetWidth;
+				revokeBtn.hidden = false;
+				revokeBtn.classList.add( 'ru-consent-revoke--visible' );
+			}
 		}, 300 );
 	}
 
@@ -334,7 +351,10 @@
 		const revokeBtn = document.getElementById( 'ru-consent-revoke' );
 
 		if ( banner ) { banner.hidden = false; }
-		if ( revokeBtn ) { revokeBtn.hidden = true; }
+		if ( revokeBtn ) {
+			revokeBtn.hidden = true;
+			revokeBtn.classList.remove( 'ru-consent-revoke--visible' );
+		}
 
 		// Move initial focus to the first action button for accessibility.
 		const firstBtn = banner?.querySelector( '.ru-consent-btn' );
@@ -523,8 +543,12 @@
 
 		if ( ! revokeBtn ) { return; }
 
+		// Show revoke button when consent cookie exists and banner is hidden/absent.
 		if ( consentData && ( ! banner || banner.hidden ) ) {
+			revokeBtn.classList.remove( 'ru-consent-revoke--visible' );
+			void revokeBtn.offsetWidth;
 			revokeBtn.hidden = false;
+			revokeBtn.classList.add( 'ru-consent-revoke--visible' );
 		}
 	}
 
@@ -537,6 +561,16 @@
 		attachEventListeners();
 		checkExistingConsent();
 		checkRevocationButton();
+
+		// Safeguard: if both banner and revoke button are hidden after all checks
+		// (e.g. PHP hid the banner based on a malformed cookie that JS just
+		// deleted), un-hide the banner so the user is never left without a CMP UI.
+		const banner    = document.getElementById( 'ru-consent-banner' );
+		const revokeBtn = document.getElementById( 'ru-consent-revoke' );
+		const bothHidden = ( ! banner || banner.hidden ) && ( ! revokeBtn || revokeBtn.hidden );
+		if ( bothHidden ) {
+			if ( banner ) { banner.hidden = false; }
+		}
 	}
 
 	// Run on DOM ready.

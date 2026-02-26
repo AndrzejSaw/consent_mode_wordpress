@@ -1,4 +1,4 @@
-﻿# Polityka uĹĽywania plikĂłw cookie i technologii Ĺ›ledzenia
+# Polityka uĹĽywania plikĂłw cookie i technologii Ĺ›ledzenia
 
 > **Dokument prawny â€” wzorzec do dostosowania.**
 > Niniejszy dokument stanowi przykĹ‚adowÄ… treĹ›Ä‡ polityki plikĂłw cookie dla stron
