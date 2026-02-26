@@ -141,14 +141,6 @@
 		].join( '; ' );
 
 		document.cookie = cookieStr;
-
-		// Verify the cookie was actually saved.
-		const verify = readConsentCookie();
-		if ( verify ) {
-			console.log( '[Consent Mode] Cookie saved OK:', verify );
-		} else {
-			console.warn( '[Consent Mode] Cookie save FAILED — document.cookie may be blocked.' );
-		}
 	}
 
 	/**
@@ -174,7 +166,6 @@
 				} catch {
 					// Malformed value (e.g. old bug where expires= was concatenated
 					// into the cookie value). Delete it so banner re-appears.
-					console.warn( '[Consent Mode] Malformed cookie, deleting. Raw value:', raw );
 					document.cookie = `${ COOKIE_NAME }=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
 					return null;
 				}
@@ -552,8 +543,6 @@
 		const banner      = document.getElementById( 'ru-consent-banner' );
 		const revokeBtn   = document.getElementById( 'ru-consent-revoke' );
 
-		console.log( '[Consent Mode] checkRevocationButton — cookie:', consentData, '| banner.hidden:', banner?.hidden, '| revokeBtn exists:', !! revokeBtn );
-
 		if ( ! revokeBtn ) { return; }
 
 		// Show revoke button when consent cookie exists and banner is hidden/absent.
@@ -562,7 +551,6 @@
 			void revokeBtn.offsetWidth;
 			revokeBtn.hidden = false;
 			revokeBtn.classList.add( 'ru-consent-revoke--visible' );
-			console.log( '[Consent Mode] Revoke button shown.' );
 		}
 	}
 
