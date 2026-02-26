@@ -228,3 +228,318 @@
 		height: 40px;
 	}
 }
+
+/* =========================================================================
+   NEW STYLES (3-button model, native <dialog> modal, hidden attr support)
+   ========================================================================= */
+
+/* --------------------------------------------------------------------------
+   Banner – hidden state (JS sets banner.hidden = true, not display:none)
+   -------------------------------------------------------------------------- */
+.ru-consent-banner[hidden] {
+	display: none;
+}
+
+.ru-consent-banner--hiding {
+	opacity: 0;
+	transform: translateY(8px);
+	transition: opacity 0.3s ease, transform 0.3s ease;
+	pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   Banner – inner container
+   -------------------------------------------------------------------------- */
+.ru-consent-container {
+	max-width: 1200px;
+	margin: 0 auto;
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 20px;
+	flex-wrap: wrap;
+}
+
+.ru-consent-content {
+	flex: 1 1 55%;
+}
+
+.ru-consent-title {
+	font-size: 16px;
+	font-weight: 600;
+	margin: 0 0 8px;
+	color: #1d2327;
+}
+
+.ru-consent-description {
+	margin: 0;
+	color: #50575e;
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.ru-consent-privacy-link {
+	color: #0073aa;
+	text-decoration: underline;
+	margin-left: 4px;
+	white-space: nowrap;
+}
+
+.ru-consent-privacy-link:hover {
+	color: #005177;
+}
+
+/* --------------------------------------------------------------------------
+   Actions – 3-button group
+   -------------------------------------------------------------------------- */
+.ru-consent-actions {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.ru-consent-btn-group {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons – shared base
+   -------------------------------------------------------------------------- */
+.ru-consent-btn {
+	display: inline-block;
+	padding: 9px 18px;
+	border: none;
+	border-radius: 4px;
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	line-height: 1.4;
+	transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+	white-space: nowrap;
+	font-family: inherit;
+}
+
+.ru-consent-btn:focus-visible {
+	outline: 3px solid #0073aa;
+	outline-offset: 2px;
+}
+
+/* Primary  – Accept All */
+.ru-consent-btn-primary {
+	background-color: #0073aa;
+	color: #ffffff;
+}
+
+.ru-consent-btn-primary:hover {
+	background-color: #005177;
+}
+
+/* Secondary – Marketing / Essential */
+.ru-consent-btn-secondary {
+	background-color: #f0f0f0;
+	color: #2c3338;
+	border: 1px solid #c3c4c7;
+}
+
+.ru-consent-btn-secondary:hover {
+	background-color: #dcdcde;
+}
+
+/* Link-style – Customize */
+.ru-consent-btn-link {
+	background: none;
+	color: #0073aa;
+	font-weight: 400;
+	padding: 4px 0;
+	text-decoration: underline;
+	font-size: 12px;
+}
+
+.ru-consent-btn-link:hover {
+	color: #005177;
+}
+
+/* --------------------------------------------------------------------------
+   Revoke button – hidden attr
+   -------------------------------------------------------------------------- */
+.ru-consent-revoke[hidden] {
+	display: none;
+}
+
+/* --------------------------------------------------------------------------
+   Modal – native <dialog>
+   -------------------------------------------------------------------------- */
+.ru-consent-modal {
+	border: none;
+	border-radius: 8px;
+	padding: 0;
+	max-width: 560px;
+	width: calc(100vw - 32px);
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans,
+	             Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+	font-size: 14px;
+	color: #1d2327;
+}
+
+/* Backdrop – native dialog backdrop + CSS fallback */
+.ru-consent-modal::backdrop {
+	background: rgba(0, 0, 0, 0.55);
+	backdrop-filter: blur(2px);
+}
+
+.ru-consent-modal-inner {
+	display: flex;
+	flex-direction: column;
+	max-height: 90vh;
+}
+
+/* Header */
+.ru-consent-modal-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 18px 20px 14px;
+	border-bottom: 1px solid #e6e6e6;
+}
+
+.ru-consent-modal-title {
+	font-size: 16px;
+	font-weight: 600;
+	margin: 0;
+}
+
+.ru-consent-modal-close {
+	background: none;
+	border: none;
+	font-size: 22px;
+	line-height: 1;
+	cursor: pointer;
+	color: #50575e;
+	padding: 4px 8px;
+	border-radius: 4px;
+}
+
+.ru-consent-modal-close:hover {
+	background-color: #f6f7f7;
+	color: #1d2327;
+}
+
+.ru-consent-modal-close:focus-visible {
+	outline: 3px solid #0073aa;
+	outline-offset: 2px;
+}
+
+/* Body */
+.ru-consent-modal-body {
+	overflow-y: auto;
+	padding: 12px 20px;
+	flex: 1;
+}
+
+/* Footer */
+.ru-consent-modal-footer {
+	padding: 14px 20px 18px;
+	border-top: 1px solid #e6e6e6;
+	display: flex;
+	justify-content: flex-end;
+}
+
+/* --------------------------------------------------------------------------
+   Category rows inside banner modal
+   -------------------------------------------------------------------------- */
+.ru-consent-category {
+	padding: 12px 0;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.ru-consent-category:last-child {
+	border-bottom: none;
+}
+
+.ru-consent-category-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.ru-consent-category-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	font-weight: 500;
+}
+
+.ru-consent-category-label input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+}
+
+.ru-consent-category-desc {
+	font-size: 12px;
+	color: #50575e;
+	margin: 6px 0 0;
+	line-height: 1.5;
+}
+
+.ru-consent-cookie-note {
+	display: block;
+	margin-top: 4px;
+	font-weight: 400;
+	color: #72777c;
+}
+
+/* "Always active" badge */
+.ru-consent-badge {
+	font-size: 11px;
+	font-weight: 600;
+	color: #00a32a;
+	background: #f0fff4;
+	border: 1px solid #a7f3b4;
+	border-radius: 10px;
+	padding: 2px 8px;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive – mobile
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+	.ru-consent-container {
+		flex-direction: column;
+		gap: 14px;
+	}
+
+	.ru-consent-content {
+		flex: 1 1 100%;
+	}
+
+	.ru-consent-actions {
+		width: 100%;
+		align-items: stretch;
+	}
+
+	.ru-consent-btn-group {
+		flex-direction: column;
+		justify-content: stretch;
+	}
+
+	.ru-consent-btn-group .ru-consent-btn {
+		width: 100%;
+		text-align: center;
+	}
+
+	.ru-consent-modal {
+		width: calc(100vw - 16px);
+		max-height: 90vh;
+	}
+}

@@ -1,18 +1,62 @@
 <?php
 /**
- * Consent module for RU Consent Mode plugin.
+ * Consent module for Consent Mode plugin.
  *
- * Manages consent state, storage, and updates for Google Consent Mode v2.
+ * Stateless server-side consent reader. Consent preferences are stored
+ * exclusively in the visitor's browser via the consent_preferences cookie.
+ * No database tables are created or used (No-DB Policy).
  *
- * @package RUConsentMode\Consent
+ * Typical PHP usage in themes or other plugins:
+ *
+ *   if ( \ConsentMode\Consent\Consent::instance()->has_consent( 'analytics_storage' ) ) {
+ *       // Render inline analytics code here.
+ *   }
+ *
+ * @package ConsentMode\Consent
  */
 
-namespace RUConsentMode\Consent;
+namespace ConsentMode\Consent;
 
 /**
  * Consent class.
+ *
+ * Provides server-side reading and validation of the consent_preferences
+ * cookie that is set client-side by the banner JavaScript.
  */
 class Consent {
+
+	/**
+	 * The cookie name used for storing consent preferences.
+	 * Must match the name configured in Front::enqueue_assets().
+	 */
+	const COOKIE_NAME = 'consent_preferences';
+
+	/**
+	 * All recognised GCMv2 consent parameters.
+	 *
+	 * @var string[]
+	 */
+	const CONSENT_PARAMS = [
+		'ad_storage',
+		'ad_user_data',
+		'ad_personalization',
+		'analytics_storage',
+		'functionality_storage',
+		'personalization_storage',
+		'security_storage',
+	];
+
+	/**
+	 * Parameters that are always granted regardless of user choice
+	 * (Legitimate Interest / technical necessity).
+	 *
+	 * @var string[]
+	 */
+	const ALWAYS_GRANTED = [
+		'functionality_storage',
+		'security_storage',
+	];
+
 	/**
 	 * Singleton instance.
 	 *
@@ -21,83 +65,164 @@ class Consent {
 	private static $instance = null;
 
 	/**
+	 * In-request cache of the parsed consent array.
+	 *
+	 * @var array|null
+	 */
+	private $consent_cache = null;
+
+	/**
 	 * Get singleton instance.
 	 *
 	 * @return Consent
 	 */
-	public static function instance() {
+	public static function instance(): Consent {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
+
 		return self::$instance;
 	}
 
 	/**
-	 * Private constructor to prevent direct instantiation.
+	 * Private constructor – use instance() to obtain the singleton.
 	 */
-	private function __construct() {
-		// Constructor logic here.
-	}
+	private function __construct() {}
 
 	/**
 	 * Initialize the consent module.
 	 *
+	 * Registers WP hooks if any future server-side processing is needed.
+	 * Currently stateless – no hooks required.
+	 *
 	 * @return void
 	 */
-	public function init() {
-		// TODO: Register REST API endpoints for consent management.
-		// add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
+	public function init(): void {}
 
-		// TODO: Hook into consent update actions.
+	/**
+	 * Get the current visitor's consent state as an associative array.
+	 *
+	 * Reads and validates the consent_preferences cookie. Falls back to
+	 * strict-privacy defaults (all denied) when:
+	 *  - the cookie is absent (first visit),
+	 *  - the cookie value is not valid JSON, or
+	 *  - the cookie contains unrecognised values.
+	 *
+	 * @return array<string, string> Map of consent parameter → 'granted'|'denied'.
+	 */
+	public function get_consent(): array {
+		// Return in-request cache when available.
+		if ( null !== $this->consent_cache ) {
+			return $this->consent_cache;
+		}
+
+		// No cookie → strict defaults (GDPR first-visit principle).
+		if ( ! isset( $_COOKIE[ self::COOKIE_NAME ] ) ) {
+			$this->consent_cache = $this->get_strict_defaults();
+			return $this->consent_cache;
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$raw = json_decode( wp_unslash( $_COOKIE[ self::COOKIE_NAME ] ), true );
+
+		if ( ! is_array( $raw ) ) {
+			$this->consent_cache = $this->get_strict_defaults();
+			return $this->consent_cache;
+		}
+
+		$this->consent_cache = $this->sanitize_consent( $raw );
+		return $this->consent_cache;
 	}
 
 	/**
-	 * Get current user consent.
+	 * Check whether the visitor has granted consent for a specific parameter.
 	 *
-	 * @return array Consent state array.
+	 * Example:
+	 *   $consent->has_consent( 'analytics_storage' ); // true|false
+	 *
+	 * @param string $param One of the CONSENT_PARAMS values.
+	 * @return bool True when the parameter is 'granted'.
 	 */
-	public function get_consent() {
-		// TODO: Retrieve consent from cookie or user meta.
-		// TODO: Return array with consent types: analytics, marketing, personalization.
-		return [];
+	public function has_consent( string $param ): bool {
+		$consent = $this->get_consent();
+		return ( $consent[ $param ] ?? 'denied' ) === 'granted';
 	}
 
 	/**
-	 * Update user consent.
+	 * Check whether the visitor has made any consent choice at all.
 	 *
-	 * @param array $consent_data Consent data array.
-	 * @return bool Success status.
+	 * Returns false on the first visit (no cookie present).
+	 *
+	 * @return bool True if the consent cookie exists and is parseable.
 	 */
-	public function update_consent( $consent_data ) {
-		// TODO: Validate consent data structure.
-		// TODO: Store consent in cookie with proper expiration.
-		// TODO: If user is logged in, store in user meta.
-		// TODO: Trigger consent update event for Google Consent Mode.
-		// TODO: Log consent change in database.
-		return false;
+	public function has_made_choice(): bool {
+		if ( ! isset( $_COOKIE[ self::COOKIE_NAME ] ) ) {
+			return false;
+		}
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$raw = json_decode( wp_unslash( $_COOKIE[ self::COOKIE_NAME ] ), true );
+
+		return is_array( $raw );
 	}
 
 	/**
-	 * Check if user has provided consent.
+	 * Invalidate the in-request consent cache.
 	 *
-	 * @return bool True if consent exists.
+	 * Call this after programmatically modifying the consent cookie (rare).
+	 *
+	 * @return void
 	 */
-	public function has_consent() {
-		// TODO: Check if consent cookie exists.
-		// TODO: Validate consent is not expired.
-		return false;
+	public function flush_cache(): void {
+		$this->consent_cache = null;
+	}
+
+	// -------------------------------------------------------------------------
+	// Private helpers
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Return strict-privacy defaults: everything denied, necessities granted.
+	 *
+	 * This is the fallback state for first-time visitors and complies with
+	 * GDPR's opt-in requirement.
+	 *
+	 * @return array<string, string>
+	 */
+	private function get_strict_defaults(): array {
+		$defaults = [];
+
+		foreach ( self::CONSENT_PARAMS as $param ) {
+			$defaults[ $param ] = in_array( $param, self::ALWAYS_GRANTED, true ) ? 'granted' : 'denied';
+		}
+
+		return $defaults;
 	}
 
 	/**
-	 * Get default consent state based on geolocation.
+	 * Sanitize raw cookie data: allow only known params and valid values.
 	 *
-	 * @param string $country_code Country code (e.g., 'RU').
-	 * @return array Default consent state.
+	 * Unknown parameters are dropped; invalid values default to 'denied'.
+	 * Parameters in ALWAYS_GRANTED are forced to 'granted'.
+	 *
+	 * @param array $raw Raw decoded cookie array.
+	 * @return array<string, string> Sanitized consent array.
 	 */
-	public function get_default_consent( $country_code = '' ) {
-		// TODO: Return default consent state based on country.
-		// TODO: For Russia and EU, default to 'denied' for all.
-		// TODO: For other countries, follow configured defaults.
-		return [];
+	private function sanitize_consent( array $raw ): array {
+		$sanitized = $this->get_strict_defaults(); // Start from safe defaults.
+
+		foreach ( self::CONSENT_PARAMS as $param ) {
+			// Always-granted params cannot be overridden by the cookie.
+			if ( in_array( $param, self::ALWAYS_GRANTED, true ) ) {
+				continue;
+			}
+
+			if ( isset( $raw[ $param ] ) && 'granted' === $raw[ $param ] ) {
+				$sanitized[ $param ] = 'granted';
+			}
+			// Otherwise it remains 'denied' from get_strict_defaults().
+		}
+
+		return $sanitized;
 	}
 }

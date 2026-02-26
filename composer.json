@@ -1,5 +1,5 @@
-{
-  "name": "ru-consent-mode/ru-consent-mode",
+﻿{
+  "name": "consent-mode/consent-mode",
   "description": "Universal WordPress plugin for Google Consent Mode v2 with multilingual support and GDPR compliance for EU/EEA",
   "type": "wordpress-plugin",
   "version": "1.0.0",
@@ -21,12 +21,12 @@
   },
   "autoload": {
     "psr-4": {
-      "RUConsentMode\\": "src/"
+      "ConsentMode\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "RUConsentMode\\Tests\\": "tests/"
+      "ConsentMode\\Tests\\": "tests/"
     }
   },
   "scripts": {

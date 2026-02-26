@@ -1,481 +1,560 @@
-/**
- * Consent Banner JavaScript for RU Consent Mode plugin.
+﻿/**
+ * Consent Banner â€“ Consent Mode plugin.
  *
- * @package RUConsentMode
+ * Handles the consent banner UI, GCMv2 gtag() updates, script
+ * reactivation, and cookie storage without any server-side AJAX calls
+ * (No-DB / stateless architecture).
+ *
+ * Requires: banner HTML rendered by Front::render_banner() and
+ *           consentMode config object injected via wp_localize_script().
+ *
+ * ES6+ â€“ no build step required. Strict mode throughout.
+ *
+ * @package ConsentMode
  */
 
-(function() {
+( function () {
 	'use strict';
 
+	// -----------------------------------------------------------------------
+	// Config â€“ resolved from wp_localize_script() output (consentMode).
+	// -----------------------------------------------------------------------
+
 	/**
-	 * RU Consent Mode Banner Handler
+	 * Name of the consent cookie.
+	 * Synced with Consent::COOKIE_NAME via wp_localize_script.
+	 *
+	 * @type {string}
 	 */
-	const RUConsentBanner = {
-		/**
-		 * Initialize the banner
-		 */
-		init() {
-			this.attachEventListeners();
-			
-			// Check for existing consent and reactivate scripts if needed
-			this.checkExistingConsent();
+	const COOKIE_NAME = window.consentMode?.cookie?.name ?? 'consent_preferences';
 
-			// Check if revocation button should be shown
-			this.checkRevocationButton();
-		},
+	// -----------------------------------------------------------------------
+	// Consent data factories
+	// -----------------------------------------------------------------------
 
-		/**
-		 * Check if revocation button should be shown
-		 */
-		checkRevocationButton() {
-			const consent = this.getCookie('ru_consent_mode');
-			const banner = document.getElementById('ru-consent-banner');
-			const revokeBtn = document.getElementById('ru-consent-revoke');
-
-			if (consent && (!banner || banner.style.display === 'none')) {
-				if (revokeBtn) {
-					revokeBtn.style.display = 'flex';
-				}
-			}
-		},
-
-		/**
-		 * Check for existing consent and reactivate scripts
-		 */
-		checkExistingConsent() {
-			const consent = this.getCookie('ru_consent_mode');
-			
-			if (!consent) {
-				return;
-			}
-
-			try {
-				const consentData = JSON.parse(consent);
-				
-				// Reactivate scripts based on consent
-				if (consentData.analytics_storage === 'granted') {
-					this.reactivateByCategory('analytics');
-				}
-				
-				if (consentData.ad_storage === 'granted') {
-					this.reactivateByCategory('ads');
-				}
-				
-				// Functional scripts are always reactivated
-				this.reactivateByCategory('functional');
-				
-			} catch (error) {
-				console.error('Error parsing consent cookie:', error);
-			}
-		},
-
-		/**
-		 * Attach event listeners to banner buttons
-		 */
-		attachEventListeners() {
-			const banner = document.getElementById('ru-consent-banner');
-			if (!banner) return;
-
-			// Accept all button
-			const acceptBtn = document.getElementById('ru-consent-accept-all');
-			if (acceptBtn) {
-				acceptBtn.addEventListener('click', () => this.handleAccept());
-			}
-
-			// Reject all button
-			const rejectBtn = document.getElementById('ru-consent-reject-all');
-			if (rejectBtn) {
-				rejectBtn.addEventListener('click', () => this.handleReject());
-			}
-
-			// Customize button
-			const customizeBtn = document.getElementById('ru-consent-customize');
-			if (customizeBtn) {
-				customizeBtn.addEventListener('click', () => this.handleCustomize());
-			}
-
-			if (saveBtn) {
-				saveBtn.addEventListener('click', () => this.handleSave());
-			}
-
-			// Revoke button
-			const revokeBtn = document.getElementById('ru-consent-revoke');
-			if (revokeBtn) {
-				revokeBtn.addEventListener('click', () => this.showBanner());
-			}
-		},
-
-		/**
-		 * Handle accept button click
-		 */
-		handleAccept() {
-			const consentData = {
-				ad_storage: 'granted',
-				ad_user_data: 'granted',
-				ad_personalization: 'granted',
-				analytics_storage: 'granted',
-				functionality_storage: 'granted',
-				personalization_storage: 'granted',
-				security_storage: 'granted'
-			};
-
-			this.updateConsent(consentData);
-		},
-
-		/**
-		 * Handle reject button click
-		 */
-		handleReject() {
-			const consentData = {
-				ad_storage: 'denied',
-				ad_user_data: 'denied',
-				ad_personalization: 'denied',
-				analytics_storage: 'denied',
-				functionality_storage: 'granted', // Necessary
-				personalization_storage: 'denied',
-				security_storage: 'granted' // Necessary
-			};
-
-			this.updateConsent(consentData);
-		},
-
-		/**
-		 * Handle customize button click
-		 */
-		handleCustomize() {
-			// Show the categories section
-			const categoriesSection = document.querySelector('.ru-consent-categories');
-			if (categoriesSection) {
-				categoriesSection.style.display = 'block';
-			}
-
-			// Hide default buttons
-			const acceptBtn = document.getElementById('ru-consent-accept-all');
-			const rejectBtn = document.getElementById('ru-consent-reject-all');
-			const customizeBtn = document.getElementById('ru-consent-customize');
-			if (acceptBtn) acceptBtn.style.display = 'none';
-			if (rejectBtn) rejectBtn.style.display = 'none';
-			if (customizeBtn) customizeBtn.style.display = 'none';
-
-			// Show save button
-			const saveBtn = document.getElementById('ru-consent-save');
-			if (saveBtn) saveBtn.style.display = 'inline-block';
-		},
-
-		/**
-		 * Handle save preferences button click
-		 */
-		handleSave() {
-			// Get checkbox values
-			const analyticsChecked = document.getElementById('consent-analytics')?.checked || false;
-			const adsChecked = document.getElementById('consent-ads')?.checked || false;
-			const functionalChecked = document.getElementById('consent-functional')?.checked || false;
-
-			const consentData = {
-				ad_storage: adsChecked ? 'granted' : 'denied',
-				ad_user_data: adsChecked ? 'granted' : 'denied',
-				ad_personalization: adsChecked ? 'granted' : 'denied',
-				analytics_storage: analyticsChecked ? 'granted' : 'denied',
-				functionality_storage: functionalChecked ? 'granted' : 'denied',
-				personalization_storage: functionalChecked ? 'granted' : 'denied',
-				security_storage: 'granted' // Always granted
-			};
-
-			this.updateConsent(consentData);
-		},
-
-		/**
-		 * Update consent state
-		 *
-		 * @param {Object} consentData - Consent data object
-		 */
-		updateConsent(consentData) {
-			// Update Google Consent Mode via gtag
-			if (typeof gtag === 'function') {
-				gtag('consent', 'update', consentData);
-			}
-
-			// Save to cookie with proper expiration
-			this.setCookie('ru_consent_mode', JSON.stringify(consentData), 365);
-
-			// Send to backend via AJAX for logging
-			this.sendConsentToBackend(consentData);
-
-			// Reactivate scripts based on consent
-			if (consentData.analytics_storage === 'granted') {
-				this.reactivateByCategory('analytics');
-			}
-
-			if (consentData.ad_storage === 'granted') {
-				this.reactivateByCategory('ads');
-			}
-
-			// Functional scripts are always reactivated
-			this.reactivateByCategory('functional');
-
-			// Hide banner
-			this.hideBanner();
-
-			// Trigger custom event for other scripts
-			document.dispatchEvent(new CustomEvent('ruConsentUpdated', {
-				detail: consentData
-			}));
-		},
-
-		/**
-		 * Reactivate blocked scripts by consent category
-		 *
-		 * @param {string} category - Consent category (analytics|ads|functional)
-		 */
-		reactivateByCategory(category) {
-			// Find all placeholder scripts for this category
-			const placeholders = document.querySelectorAll(
-				`script[type="text/plain"][data-rcm-consent="${category}"]`
-			);
-
-			if (!placeholders.length) {
-				console.log(`[RU Consent Mode] No scripts found for category: ${category}`);
-				return;
-			}
-
-			console.log(`[RU Consent Mode] Reactivating ${placeholders.length} script(s) for category: ${category}`);
-
-			// Reactivate each placeholder
-			placeholders.forEach(placeholder => this.reactivateScript(placeholder));
-		},
-
-		/**
-		 * Reactivate a single script placeholder
-		 *
-		 * @param {HTMLElement} placeholder - Placeholder script element
-		 */
-		reactivateScript(placeholder) {
-			const src = placeholder.getAttribute('data-src');
-
-			if (src) {
-				// External script
-				this.reactivateExternalScript(placeholder, src);
-			} else {
-				// Inline script
-				this.reactivateInlineScript(placeholder);
-			}
-		},
-
-		/**
-		 * Reactivate external script
-		 *
-		 * @param {HTMLElement} placeholder - Placeholder script element
-		 * @param {string} src - Script source URL
-		 */
-		reactivateExternalScript(placeholder, src) {
-			// Create new script element
-			const script = document.createElement('script');
-			script.src = src;
-
-			// Restore original type (if not default)
-			const originalType = placeholder.getAttribute('data-original-type');
-			if (originalType) {
-				script.type = originalType;
-			}
-
-			// Restore async attribute
-			if (placeholder.hasAttribute('data-async')) {
-				script.async = true;
-			}
-
-			// Restore defer attribute
-			if (placeholder.hasAttribute('data-defer')) {
-				script.defer = true;
-			}
-
-			// Restore crossorigin attribute
-			const crossorigin = placeholder.getAttribute('data-crossorigin');
-			if (crossorigin) {
-				script.crossOrigin = crossorigin;
-			}
-
-			// Restore integrity attribute
-			const integrity = placeholder.getAttribute('data-integrity');
-			if (integrity) {
-				script.integrity = integrity;
-			}
-
-			// Restore nonce attribute
-			const nonce = placeholder.getAttribute('data-nonce');
-			if (nonce) {
-				script.nonce = nonce;
-			}
-
-			// Copy other data attributes
-			Array.from(placeholder.attributes).forEach(attr => {
-				if (attr.name.startsWith('data-') && 
-					!attr.name.startsWith('data-rcm-') && 
-					!attr.name.startsWith('data-src') &&
-					!attr.name.startsWith('data-async') &&
-					!attr.name.startsWith('data-defer') &&
-					!attr.name.startsWith('data-crossorigin') &&
-					!attr.name.startsWith('data-integrity') &&
-					!attr.name.startsWith('data-nonce') &&
-					!attr.name.startsWith('data-original-type')) {
-					script.setAttribute(attr.name, attr.value);
-				}
-			});
-
-			script.onload = () => {
-				console.log(`[RU Consent Mode] Script loaded: ${src}`);
-			};
-
-			script.onerror = () => {
-				console.error(`[RU Consent Mode] Failed to load script: ${src}`);
-			};
-
-			// Replace placeholder with active script
-			placeholder.parentNode.replaceChild(script, placeholder);
-		},
-
-		/**
-		 * Reactivate inline script
-		 *
-		 * @param {HTMLElement} placeholder - Placeholder script element
-		 */
-		reactivateInlineScript(placeholder) {
-			// Create new script element
-			const script = document.createElement('script');
-
-			// Restore original type (if not default)
-			const originalType = placeholder.getAttribute('data-original-type');
-			if (originalType) {
-				script.type = originalType;
-			} else {
-				script.type = 'text/javascript';
-			}
-
-			// Copy inline content
-			script.textContent = placeholder.textContent;
-
-			// Replace placeholder with active script
-			placeholder.parentNode.replaceChild(script, placeholder);
-
-			console.log('[RU Consent Mode] Inline script reactivated');
-		},
-
-		/**
-		 * Send consent data to backend
-		 *
-		 * @param {Object} consentData - Consent data object
-		 */
-		sendConsentToBackend(consentData) {
-			const ajaxUrl = window.ruConsentMode?.ajaxUrl || '/wp-admin/admin-ajax.php';
-			const nonce = window.ruConsentMode?.nonce || '';
-
-			fetch(ajaxUrl, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/x-www-form-urlencoded',
-				},
-				body: new URLSearchParams({
-					action: 'ru_consent_mode_submit',
-					nonce: nonce,
-					consent: JSON.stringify(consentData)
-				})
-			})
-			.then(response => response.json())
-			.then(data => {
-				if (data.success) {
-					console.log('[RU Consent Mode] Consent saved successfully:', data);
-				} else {
-					console.error('[RU Consent Mode] Error saving consent:', data);
-				}
-			})
-			.catch(error => {
-				console.error('[RU Consent Mode] AJAX error:', error);
-			});
-		},
-
-		/**
-		 * Hide the consent banner
-		 */
-		hideBanner() {
-			const banner = document.getElementById('ru-consent-banner');
-			if (banner) {
-				banner.classList.add('ru-consent-banner--hidden');
-				setTimeout(() => {
-					banner.style.display = 'none';
-					banner.classList.remove('ru-consent-banner--hidden'); // Reset class for next show
-					
-					// Show revocation button
-					const revokeBtn = document.getElementById('ru-consent-revoke');
-					if (revokeBtn) {
-						revokeBtn.style.display = 'flex';
-					}
-				}, 300);
-			}
-		},
-
-		/**
-		 * Show the consent banner
-		 */
-		showBanner() {
-			const banner = document.getElementById('ru-consent-banner');
-			const revokeBtn = document.getElementById('ru-consent-revoke');
-
-			if (banner) {
-				banner.style.display = 'block';
-				// Hide revocation button
-				if (revokeBtn) {
-					revokeBtn.style.display = 'none';
-				}
-			}
-		},
-
-		/**
-		 * Set a cookie
-		 *
-		 * @param {string} name - Cookie name
-		 * @param {string} value - Cookie value
-		 * @param {number} days - Expiration in days
-		 */
-		setCookie(name, value, days) {
-			const date = new Date();
-			date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-			const expires = "expires=" + date.toUTCString();
-			
-			// Use config from localized script if available
-			const config = window.ruConsentMode?.cookie || {};
-			const path = config.path || '/';
-			const domain = config.domain ? `;domain=${config.domain}` : '';
-			const secure = config.secure ? ';Secure' : '';
-			const sameSite = config.sameSite || 'Lax';
-			
-			document.cookie = `${name}=${value};${expires};path=${path}${domain}${secure};SameSite=${sameSite}`;
-		},
-
-		/**
-		 * Get a cookie
-		 *
-		 * @param {string} name - Cookie name
-		 * @return {string|null} Cookie value or null
-		 */
-		getCookie(name) {
-			const nameEQ = name + "=";
-			const ca = document.cookie.split(';');
-			for (let i = 0; i < ca.length; i++) {
-				let c = ca[i];
-				while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-				if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-			}
-			return null;
-		}
-	};
-
-	// Initialize on DOM ready
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', () => RUConsentBanner.init());
-	} else {
-		RUConsentBanner.init();
+	/**
+	 * Build a "all granted" consent object (Accept All / Marketing buttons).
+	 *
+	 * Per TZ: both "Marketing" and "Accept All" buttons grant identical
+	 * consent â€“ they differ only in visual weight (secondary vs primary).
+	 *
+	 * @returns {Object}
+	 */
+	function buildGrantedAll() {
+		return {
+			ad_storage:               'granted',
+			ad_user_data:             'granted',
+			ad_personalization:       'granted',
+			analytics_storage:        'granted',
+			functionality_storage:    'granted',
+			personalization_storage:  'granted',
+			security_storage:         'granted',
+		};
 	}
 
-	// Expose to global scope if needed
-	window.RUConsentBanner = RUConsentBanner;
+	/**
+	 * Build an "essential only" consent object (Strict Privacy / Essential button).
+	 *
+	 * @returns {Object}
+	 */
+	function buildEssentialOnly() {
+		return {
+			ad_storage:               'denied',
+			ad_user_data:             'denied',
+			ad_personalization:       'denied',
+			analytics_storage:        'denied',
+			functionality_storage:    'granted', // Legitimate Interest â€“ site functionality.
+			personalization_storage:  'denied',
+			security_storage:         'granted', // Legitimate Interest â€“ security.
+		};
+	}
 
-})();
+	/**
+	 * Build a granular consent object from modal checkbox state.
+	 *
+	 * @returns {Object}
+	 */
+	function buildGranular() {
+		const analyticsGranted = document.getElementById( 'consent-analytics' )?.checked ?? false;
+		const marketingGranted = document.getElementById( 'consent-marketing' )?.checked ?? false;
+
+		return {
+			ad_storage:               marketingGranted ? 'granted' : 'denied',
+			ad_user_data:             marketingGranted ? 'granted' : 'denied',
+			ad_personalization:       marketingGranted ? 'granted' : 'denied',
+			analytics_storage:        analyticsGranted ? 'granted' : 'denied',
+			functionality_storage:    'granted',
+			personalization_storage:  'denied',
+			security_storage:         'granted',
+		};
+	}
+
+	// -----------------------------------------------------------------------
+	// GCMv2 â€“ gtag() integration
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Push a consent update to the dataLayer via gtag().
+	 *
+	 * Safe to call before GTM boots â€“ dataLayer is initialised in Bootstrap.php
+	 * at wp_head priority 0 which always fires before any script.
+	 *
+	 * @param {Object} consentData GCMv2 consent parameter map.
+	 * @returns {void}
+	 */
+	function pushConsentUpdate( consentData ) {
+		if ( typeof window.gtag === 'function' ) {
+			window.gtag( 'consent', 'update', consentData );
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Cookie helpers (SameSite=Lax; Secure when HTTPS)
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Persist consent data in the consent_preferences cookie.
+	 *
+	 * Cookie attributes are taken from consentMode.cookie config injected
+	 * by wp_localize_script() so they match server-side settings exactly.
+	 *
+	 * @param {Object} consentData
+	 * @returns {void}
+	 */
+	function saveConsentCookie( consentData ) {
+		const cfg  = window.consentMode?.cookie ?? {};
+		const days = cfg.expires ?? 365;
+
+		const expires = new Date();
+		expires.setTime( expires.getTime() + days * 24 * 60 * 60 * 1000 );
+
+		const path     = cfg.path    ? `;path=${ cfg.path }` : ';path=/';
+		const domain   = cfg.domain  ? `;domain=${ cfg.domain }` : '';
+		const secure   = cfg.secure  ? ';Secure'                  : '';
+		const sameSite = `;SameSite=${ cfg.sameSite ?? 'Lax' }`;
+
+		document.cookie = [
+			`${ COOKIE_NAME }=${ encodeURIComponent( JSON.stringify( consentData ) ) }`,
+			`expires=${ expires.toUTCString() }`,
+			path, domain, secure, sameSite,
+		].join( '' );
+	}
+
+	/**
+	 * Read and parse the consent cookie.
+	 *
+	 * @returns {Object|null} Parsed consent object, or null if absent / invalid.
+	 */
+	function readConsentCookie() {
+		const prefix = COOKIE_NAME + '=';
+		const parts  = document.cookie.split( ';' );
+
+		for ( let i = 0; i < parts.length; i++ ) {
+			const part = parts[ i ].trimStart();
+			if ( part.startsWith( prefix ) ) {
+				try {
+					return JSON.parse( decodeURIComponent( part.slice( prefix.length ) ) );
+				} catch {
+					return null;
+				}
+			}
+		}
+
+		return null;
+	}
+
+	// -----------------------------------------------------------------------
+	// Script reactivation (ScriptGuard integration)
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Reactivate all blocked scripts for a consent category.
+	 *
+	 * Supports both attribute conventions:
+	 *  - data-rcm-consent="analytics"   (internal, legacy)
+	 *  - data-consent-category="analytics" (public-facing spec per TZ)
+	 *
+	 * @param {string} category analytics|ads|functional
+	 * @returns {void}
+	 */
+	function reactivateByCategory( category ) {
+		const selector = [
+			`script[type="text/plain"][data-rcm-consent="${ category }"]`,
+			`script[type="text/plain"][data-consent-category="${ category }"]`,
+		].join( ', ' );
+
+		const placeholders = document.querySelectorAll( selector );
+
+		if ( ! placeholders.length ) {
+			return;
+		}
+
+		placeholders.forEach( reactivateScript );
+	}
+
+	/**
+	 * Reactivate a single blocked-script placeholder element.
+	 *
+	 * @param {HTMLElement} placeholder <script type="text/plain"> element.
+	 * @returns {void}
+	 */
+	function reactivateScript( placeholder ) {
+		const src = placeholder.getAttribute( 'data-src' );
+
+		if ( src ) {
+			reactivateExternalScript( placeholder, src );
+		} else {
+			reactivateInlineScript( placeholder );
+		}
+	}
+
+	/**
+	 * Reactivate an external (src=) script.
+	 *
+	 * Restores all original attributes preserved by ScriptGuard.php.
+	 *
+	 * @param {HTMLElement} placeholder
+	 * @param {string} src
+	 * @returns {void}
+	 */
+	function reactivateExternalScript( placeholder, src ) {
+		const script = document.createElement( 'script' );
+		script.src   = src;
+
+		const originalType = placeholder.getAttribute( 'data-original-type' );
+		if ( originalType ) { script.type = originalType; }
+		if ( placeholder.hasAttribute( 'data-async' ) ) { script.async = true; }
+		if ( placeholder.hasAttribute( 'data-defer' ) ) { script.defer = true; }
+
+		const crossorigin = placeholder.getAttribute( 'data-crossorigin' );
+		if ( crossorigin ) { script.crossOrigin = crossorigin; }
+
+		const integrity = placeholder.getAttribute( 'data-integrity' );
+		if ( integrity ) { script.integrity = integrity; }
+
+		const nonce = placeholder.getAttribute( 'data-nonce' );
+		if ( nonce ) { script.nonce = nonce; }
+
+		// Preserve unknown data-* attributes (not internal data-rcm-* / data-consent-* ones).
+		const skipPrefixes = [ 'data-rcm-', 'data-consent-', 'data-src', 'data-async',
+			'data-defer', 'data-crossorigin', 'data-integrity', 'data-nonce', 'data-original-type' ];
+
+		Array.from( placeholder.attributes ).forEach( ( attr ) => {
+			if ( attr.name.startsWith( 'data-' ) && ! skipPrefixes.some( p => attr.name.startsWith( p ) ) ) {
+				script.setAttribute( attr.name, attr.value );
+			}
+		} );
+
+		placeholder.parentNode?.replaceChild( script, placeholder );
+	}
+
+	/**
+	 * Reactivate an inline script.
+	 *
+	 * @param {HTMLElement} placeholder
+	 * @returns {void}
+	 */
+	function reactivateInlineScript( placeholder ) {
+		const script = document.createElement( 'script' );
+		const originalType = placeholder.getAttribute( 'data-original-type' );
+		script.type        = originalType ?? 'text/javascript';
+		script.textContent  = placeholder.textContent;
+		placeholder.parentNode?.replaceChild( script, placeholder );
+	}
+
+	// -----------------------------------------------------------------------
+	// Core consent flow
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Central consent update: push GCMv2, save cookie, unblock scripts,
+	 * hide the banner, and dispatch a custom event.
+	 *
+	 * No AJAX calls â€“ fully stateless as required by the No-DB Policy.
+	 *
+	 * @param {Object} consentData
+	 * @returns {void}
+	 */
+	function applyConsent( consentData ) {
+		// 1. Update Google Consent Mode via gtag().
+		pushConsentUpdate( consentData );
+
+		// 2. Persist choice in browser cookie (SameSite=Lax; Secure on HTTPS).
+		saveConsentCookie( consentData );
+
+		// 3. Unblock scripts that just received consent.
+		if ( consentData.analytics_storage === 'granted' ) {
+			reactivateByCategory( 'analytics' );
+		}
+		if ( consentData.ad_storage === 'granted' ) {
+			reactivateByCategory( 'ads' );
+		}
+		// Functional scripts are always reactivated (Legitimate Interest).
+		reactivateByCategory( 'functional' );
+
+		// 4. Close modal if open and hide banner.
+		closeModal();
+		hideBanner();
+
+		// 5. Notify other scripts (theme integrations etc.).
+		document.dispatchEvent( new CustomEvent( 'ruConsentUpdated', { detail: consentData } ) );
+	}
+
+	// -----------------------------------------------------------------------
+	// Banner visibility
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Animate-out and hide the consent banner; show revoke button.
+	 *
+	 * @returns {void}
+	 */
+	function hideBanner() {
+		const banner    = document.getElementById( 'ru-consent-banner' );
+		const revokeBtn = document.getElementById( 'ru-consent-revoke' );
+
+		if ( ! banner ) { return; }
+
+		banner.classList.add( 'ru-consent-banner--hiding' );
+
+		setTimeout( () => {
+			banner.hidden = true;
+			banner.classList.remove( 'ru-consent-banner--hiding' );
+			if ( revokeBtn ) { revokeBtn.hidden = false; }
+		}, 300 );
+	}
+
+	/**
+	 * Show the consent banner and hide the revoke button.
+	 *
+	 * @returns {void}
+	 */
+	function showBanner() {
+		const banner    = document.getElementById( 'ru-consent-banner' );
+		const revokeBtn = document.getElementById( 'ru-consent-revoke' );
+
+		if ( banner ) { banner.hidden = false; }
+		if ( revokeBtn ) { revokeBtn.hidden = true; }
+
+		// Move initial focus to the first action button for accessibility.
+		const firstBtn = banner?.querySelector( '.ru-consent-btn' );
+		firstBtn?.focus();
+	}
+
+	// -----------------------------------------------------------------------
+	// Modal (native <dialog>)
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Open the granular settings modal.
+	 *
+	 * Uses the native HTMLDialogElement.showModal() which:
+	 *  - Creates an implicit backdrop (::backdrop pseudo-element)
+	 *  - Traps focus within the dialog automatically
+	 *  - Fires 'cancel' on Escape key
+	 *
+	 * @returns {void}
+	 */
+	function openModal() {
+		const modal = document.getElementById( 'ru-consent-modal' );
+		if ( ! modal ) { return; }
+
+		// Pre-fill checkboxes from existing cookie if present.
+		const existing = readConsentCookie();
+		if ( existing ) {
+			const analyticsCheck = document.getElementById( 'consent-analytics' );
+			const marketingCheck = document.getElementById( 'consent-marketing' );
+			if ( analyticsCheck ) { analyticsCheck.checked = existing.analytics_storage === 'granted'; }
+			if ( marketingCheck ) { marketingCheck.checked = existing.ad_storage          === 'granted'; }
+		}
+
+		// Update aria-expanded on the customize button.
+		const customizeBtn = document.getElementById( 'ru-consent-customize' );
+		if ( customizeBtn ) { customizeBtn.setAttribute( 'aria-expanded', 'true' ); }
+
+		modal.showModal();
+	}
+
+	/**
+	 * Close the granular settings modal.
+	 *
+	 * @returns {void}
+	 */
+	function closeModal() {
+		const modal = document.getElementById( 'ru-consent-modal' );
+		if ( modal?.open ) {
+			modal.close();
+		}
+
+		const customizeBtn = document.getElementById( 'ru-consent-customize' );
+		if ( customizeBtn ) { customizeBtn.setAttribute( 'aria-expanded', 'false' ); }
+	}
+
+	// -----------------------------------------------------------------------
+	// Event handlers (button clicks, modal close)
+	// -----------------------------------------------------------------------
+
+	/** Accept All â€“ all granted, primary CTA. */
+	function handleAccept() {
+		applyConsent( buildGrantedAll() );
+	}
+
+	/**
+	 * Marketing â€“ all granted, secondary button.
+	 *
+	 * Per TZ spec: "ĐśĐ°Ń€ĐşĐµŃ‚Đ¸Đ˝Đł: ĐŁŃŃ‚Đ°Đ˝Đ°Đ˛Đ»Đ¸Đ˛Đ°ĐµŃ‚ ŃŃ€ĐľĐ˛ĐµĐ˝ŃŚ granted Đ´Đ»ŃŹ Đ˛ŃĐµŃ…
+	 * ĐżĐ°Ń€Đ°ĐĽĐµŃ‚Ń€ĐľĐ˛ GCMv2. ĐĐ˝Đ°Đ»ĐľĐłĐ¸Ń‡Đ˝Đľ ĐźŃ€Đ¸Đ˝ŃŹŃ‚ŃŚ Đ˛ŃŃ‘, Đ˝Đľ secondary button."
+	 */
+	function handleMarketing() {
+		applyConsent( buildGrantedAll() );
+	}
+
+	/** Essential only â€“ all optional denied. */
+	function handleEssential() {
+		applyConsent( buildEssentialOnly() );
+	}
+
+	/** Customize â€“ open granular modal. */
+	function handleCustomize() {
+		openModal();
+	}
+
+	/** Save from modal â€“ reads checkboxes. */
+	function handleSave() {
+		applyConsent( buildGranular() );
+	}
+
+	// -----------------------------------------------------------------------
+	// Event listener setup
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Attach click / dialog event listeners.
+	 *
+	 * All elements are checked for existence before use to silence
+	 * ReferenceErrors on pages where the banner is intentionally absent.
+	 *
+	 * @returns {void}
+	 */
+	function attachEventListeners() {
+		const banner = document.getElementById( 'ru-consent-banner' );
+		if ( ! banner ) { return; }
+
+		// ---- Banner buttons ------------------------------------------------
+		document.getElementById( 'ru-consent-accept-all' )
+			?.addEventListener( 'click', handleAccept );
+
+		document.getElementById( 'ru-consent-marketing' )
+			?.addEventListener( 'click', handleMarketing );
+
+		document.getElementById( 'ru-consent-essential' )
+			?.addEventListener( 'click', handleEssential );
+
+		document.getElementById( 'ru-consent-customize' )
+			?.addEventListener( 'click', handleCustomize );
+
+		// ---- Modal controls ------------------------------------------------
+		// NOTE: saveBtn is declared here â€“ fixing the ReferenceError that
+		// existed in the previous version where it was used before declaration.
+		const saveBtn = document.getElementById( 'ru-consent-save' );
+		saveBtn?.addEventListener( 'click', handleSave );
+
+		document.getElementById( 'ru-consent-modal-close' )
+			?.addEventListener( 'click', closeModal );
+
+		// Close modal when user clicks the native <dialog> backdrop area.
+		const modal = document.getElementById( 'ru-consent-modal' );
+		modal?.addEventListener( 'click', ( event ) => {
+			// dialog element fills the viewport; a click directly on it (not its
+			// children) means the backdrop was clicked.
+			if ( event.target === modal ) {
+				closeModal();
+			}
+		} );
+
+		// Native <dialog> fires 'cancel' on Escape â€“ close gracefully.
+		modal?.addEventListener( 'cancel', ( event ) => {
+			event.preventDefault(); // Prevent the dialog closing without calling closeModal.
+			closeModal();
+		} );
+
+		// ---- Revoke button -------------------------------------------------
+		document.getElementById( 'ru-consent-revoke' )
+			?.addEventListener( 'click', showBanner );
+	}
+
+	// -----------------------------------------------------------------------
+	// Initialisation
+	// -----------------------------------------------------------------------
+
+	/**
+	 * Re-apply consent from existing cookie for returning visitors.
+	 *
+	 * Unblocks scripts that match the stored consent state without
+	 * showing the banner again.
+	 *
+	 * @returns {void}
+	 */
+	function checkExistingConsent() {
+		const consentData = readConsentCookie();
+		if ( ! consentData ) { return; }
+
+		// Silently push the stored consent to GCMv2 (session restore).
+		pushConsentUpdate( consentData );
+
+		if ( consentData.analytics_storage === 'granted' ) {
+			reactivateByCategory( 'analytics' );
+		}
+		if ( consentData.ad_storage === 'granted' ) {
+			reactivateByCategory( 'ads' );
+		}
+		reactivateByCategory( 'functional' );
+	}
+
+	/**
+	 * Show the revoke button when the banner is already dismissed.
+	 *
+	 * @returns {void}
+	 */
+	function checkRevocationButton() {
+		const consentData = readConsentCookie();
+		const banner      = document.getElementById( 'ru-consent-banner' );
+		const revokeBtn   = document.getElementById( 'ru-consent-revoke' );
+
+		if ( ! revokeBtn ) { return; }
+
+		if ( consentData && ( ! banner || banner.hidden ) ) {
+			revokeBtn.hidden = false;
+		}
+	}
+
+	/**
+	 * Main entry point.
+	 *
+	 * @returns {void}
+	 */
+	function init() {
+		attachEventListeners();
+		checkExistingConsent();
+		checkRevocationButton();
+	}
+
+	// Run on DOM ready.
+	if ( document.readyState === 'loading' ) {
+		document.addEventListener( 'DOMContentLoaded', init );
+	} else {
+		init();
+	}
+
+	// Expose to global scope for external integrations.
+	window.RUConsentBanner = {
+		init,
+		showBanner,
+		hideBanner,
+		openModal,
+		closeModal,
+		applyConsent,
+		readConsentCookie,
+	};
+
+}() );

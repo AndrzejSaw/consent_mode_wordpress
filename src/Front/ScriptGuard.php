@@ -1,14 +1,14 @@
 <?php
 /**
- * Script Guard module for RU Consent Mode plugin.
+ * Script Guard module for Consent Mode plugin.
  *
  * Blocks tracking scripts until user provides consent.
  * Converts script tags to placeholders and reactivates them based on consent.
  *
- * @package RUConsentMode\Front
+ * @package ConsentMode\Front
  */
 
-namespace RUConsentMode\Front;
+namespace ConsentMode\Front;
 
 /**
  * ScriptGuard class.
@@ -82,7 +82,7 @@ class ScriptGuard {
 	 * @return void
 	 */
 	private function load_categories_map() {
-		$settings = get_option( 'ru_consent_mode_settings', [] );
+		$settings = get_option( 'consent_mode_settings', [] );
 
 		// Default categories map if not set.
 		$default_map = [
@@ -99,7 +99,13 @@ class ScriptGuard {
 	/**
 	 * Guard script tag based on consent category.
 	 *
-	 * Converts script tags to placeholders if they require consent.
+	 * Converts script tags to type="text/plain" placeholders if they require
+	 * consent. Category resolution order:
+	 *  1. Admin-configured handles CSV (Script Guard Settings page).
+	 *  2. wp_script_add_data( $handle, 'consent-category', 'analytics' ) — for
+	 *     programmatic assignment by themes/plugins.
+	 *  3. data-consent-category HTML attribute already present in the tag —
+	 *     for manually authored script tags.
 	 *
 	 * @param string $tag    The script tag HTML.
 	 * @param string $handle Script handle/ID.
@@ -107,10 +113,25 @@ class ScriptGuard {
 	 * @return string Modified or original script tag.
 	 */
 	public function guard( $tag, $handle, $src ) {
-		// Get consent category for this handle.
+		// 1. Check the admin-configured handles map.
 		$category = $this->get_handle_category( $handle );
 
-		// If handle is not in any category, return original tag.
+		// 2. Fallback: wp_script_add_data( $handle, 'consent-category', '...' ).
+		if ( ! $category ) {
+			$meta = wp_scripts()->get_data( $handle, 'consent-category' );
+			if ( $meta ) {
+				$category = $this->normalize_category( (string) $meta );
+			}
+		}
+
+		// 3. Fallback: data-consent-category attribute in the tag HTML.
+		if ( ! $category ) {
+			if ( preg_match( '/\sdata-consent-category=["\']([\ w-]+)["\']/', $tag, $matches ) ) {
+				$category = $this->normalize_category( $matches[1] );
+			}
+		}
+
+		// If still not assigned to any category, return original tag.
 		if ( ! $category ) {
 			return $tag;
 		}
@@ -141,9 +162,12 @@ class ScriptGuard {
 	 * @return string Guarded script tag.
 	 */
 	private function guard_external_script( $tag, $handle, $src, $category, $attributes ) {
-		// Build placeholder script tag.
+		// Build placeholder script tag with both attribute conventions:
+		// – data-rcm-consent: internal plugin convention.
+		// – data-consent-category: public-facing spec (as per TZ requirement).
 		$placeholder  = '<script type="text/plain"';
 		$placeholder .= ' data-rcm-consent="' . esc_attr( $category ) . '"';
+		$placeholder .= ' data-consent-category="' . esc_attr( $category ) . '"';
 		$placeholder .= ' data-src="' . esc_url( $src ) . '"';
 		$placeholder .= ' id="rcm-' . esc_attr( $handle ) . '"';
 
@@ -203,6 +227,7 @@ class ScriptGuard {
 		// Build placeholder script tag with content inside.
 		$placeholder  = '<script type="text/plain"';
 		$placeholder .= ' data-rcm-consent="' . esc_attr( $category ) . '"';
+		$placeholder .= ' data-consent-category="' . esc_attr( $category ) . '"';
 		$placeholder .= ' id="rcm-inline-' . esc_attr( $handle ) . '"';
 
 		// Preserve type attribute (if not the default).
@@ -254,6 +279,30 @@ class ScriptGuard {
 		reset( $found_categories );
 
 		return key( $found_categories );
+	}
+
+	/**
+	 * Normalise external or alias category names to the internal identifiers.
+	 *
+	 * Supports use of 'marketing'/'advertising' as aliases for 'ads', and
+	 * 'statistics' as an alias for 'analytics', so theme / plugin developers
+	 * can use intuitive names in data-consent-category attributes.
+	 *
+	 * @param string $category Raw category string from attribute or metadata.
+	 * @return string|null Normalised, recognised category name, or null.
+	 */
+	private function normalize_category( string $category ): ?string {
+		$alias_map = [
+			'marketing'   => 'ads',
+			'advertising' => 'ads',
+			'statistics'  => 'analytics',
+		];
+
+		$category = strtolower( trim( $category ) );
+		$resolved = $alias_map[ $category ] ?? $category;
+
+		// Only return known categories.
+		return array_key_exists( $resolved, $this->category_priority ) ? $resolved : null;
 	}
 
 	/**
@@ -407,10 +456,10 @@ class ScriptGuard {
 	 * @return bool Success status.
 	 */
 	private function save_categories_map() {
-		$settings                    = get_option( 'ru_consent_mode_settings', [] );
+		$settings                    = get_option( 'consent_mode_settings', [] );
 		$settings['categories_map']  = $this->categories_map;
 
-		return update_option( 'ru_consent_mode_settings', $settings );
+		return update_option( 'consent_mode_settings', $settings );
 	}
 
 	/**

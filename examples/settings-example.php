@@ -1,15 +1,15 @@
-<?php
+﻿<?php
 /**
- * Example settings configuration for RU Consent Mode plugin.
+ * Example settings configuration for Consent Mode plugin.
  *
  * This file demonstrates how to configure the plugin settings.
  * Copy these settings to your WordPress database or admin panel.
  *
- * @package RUConsentMode
+ * @package ConsentMode
  */
 
 // Default plugin settings structure.
-$ru_consent_mode_settings = [
+$consent_mode_settings = [
 	// Google Tag Manager Configuration.
 	'inject_gtm_loader'  => true,              // Enable GTM injection.
 	'gtm_container_id'   => 'GTM-XXXXXXX',     // Your GTM container ID.
@@ -57,29 +57,29 @@ $ru_consent_mode_settings = [
 ];
 
 // Save settings to database.
-// update_option( 'ru_consent_mode_settings', $ru_consent_mode_settings );
+// update_option( 'consent_mode_settings', $consent_mode_settings );
 
 /**
  * How to set settings programmatically:
  */
 
 // Example 1: Update single setting.
-// $settings = get_option( 'ru_consent_mode_settings', [] );
+// $settings = get_option( 'consent_mode_settings', [] );
 // $settings['gtm_container_id'] = 'GTM-ABC123';
-// update_option( 'ru_consent_mode_settings', $settings );
+// update_option( 'consent_mode_settings', $settings );
 
 // Example 2: Enable GTM with specific container.
-// $settings = get_option( 'ru_consent_mode_settings', [] );
+// $settings = get_option( 'consent_mode_settings', [] );
 // $settings['inject_gtm_loader'] = true;
 // $settings['gtm_container_id'] = 'GTM-ABC123';
-// update_option( 'ru_consent_mode_settings', $settings );
+// update_option( 'consent_mode_settings', $settings );
 
 /**
  * How to use filters to customize consent behavior:
  */
 
 // Example 1: Customize default consent state.
-add_filter( 'ru_consent_mode_default_consent', function( $consent, $country_code, $is_strict_region ) {
+add_filter( 'consent_mode_default_consent', function( $consent, $country_code, $is_strict_region ) {
 	// Grant analytics in non-strict regions by default.
 	if ( ! $is_strict_region ) {
 		$consent['analytics_storage'] = 'granted';
@@ -88,7 +88,7 @@ add_filter( 'ru_consent_mode_default_consent', function( $consent, $country_code
 }, 10, 3 );
 
 // Example 2: Modify consent types.
-add_filter( 'ru_consent_mode_consent_types', function( $types ) {
+add_filter( 'consent_mode_consent_types', function( $types ) {
 	// Add custom consent type.
 	$types['custom_storage'] = 'Custom Data Storage';
 	return $types;
@@ -131,7 +131,7 @@ $development_settings = [
 
 // 1. Check if consent mode is initialized:
 //    - Open browser console
-//    - Look for: "[RU Consent Mode] Default consent state initialized"
+//    - Look for: "[Consent Mode] Default consent state initialized"
 //    - Check window.dataLayer array
 
 // 2. Check if GTM is loaded:
@@ -201,7 +201,7 @@ if ( defined( 'WP_ENVIRONMENT_TYPE' ) ) {
 	}
 
 	// Update settings based on environment.
-	// $settings = get_option( 'ru_consent_mode_settings', [] );
+	// $settings = get_option( 'consent_mode_settings', [] );
 	// $settings['gtm_container_id'] = $gtm_id;
-	// update_option( 'ru_consent_mode_settings', $settings );
+	// update_option( 'consent_mode_settings', $settings );
 }

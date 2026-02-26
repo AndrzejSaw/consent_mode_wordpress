@@ -1,13 +1,13 @@
 <?php
 /**
- * Geo module for RU Consent Mode plugin.
+ * Geo module for Consent Mode plugin.
  *
  * Handles geolocation detection to determine user's country for consent requirements.
  *
- * @package RUConsentMode\Geo
+ * @package ConsentMode\Geo
  */
 
-namespace RUConsentMode\Geo;
+namespace ConsentMode\Geo;
 
 /**
  * Geo class.
@@ -55,7 +55,7 @@ class Geo {
 	 */
 	public function get_country_code() {
 		// Check for cached country code in transient.
-		$cached_country = get_transient( 'ru_consent_mode_country_' . $this->get_user_ip_hash() );
+		$cached_country = get_transient( 'consent_mode_country_' . $this->get_user_ip_hash() );
 		if ( false !== $cached_country ) {
 			return $cached_country;
 		}
@@ -84,7 +84,7 @@ class Geo {
 
 		// Cache result for 24 hours.
 		if ( ! empty( $country_code ) ) {
-			set_transient( 'ru_consent_mode_country_' . $this->get_user_ip_hash(), $country_code, DAY_IN_SECONDS );
+			set_transient( 'consent_mode_country_' . $this->get_user_ip_hash(), $country_code, DAY_IN_SECONDS );
 		}
 
 		return $country_code;

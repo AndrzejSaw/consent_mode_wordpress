@@ -1,11 +1,11 @@
 <?php
 /**
- * Uninstall script for RU Consent Mode plugin.
+ * Uninstall script for Consent Mode plugin.
  *
  * This file is called when the plugin is deleted via WordPress admin.
  * It removes all plugin data if the purge_on_uninstall option is enabled.
  *
- * @package RUConsentMode
+ * @package ConsentMode
  */
 
 // Exit if not called from WordPress.
@@ -14,36 +14,26 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 }
 
 /**
- * Check if user wants to purge all data on uninstall.
+ * Remove all plugin data if the user enabled the "purge on uninstall" option.
+ *
+ * No custom DB tables exist — the plugin is fully stateless (No-DB Policy).
+ * Consent preferences live exclusively in the visitor's browser cookies.
+ * The only server-side storage is the standard wp_options table.
  */
-$purge_on_uninstall = get_option( 'ru_consent_mode_purge_on_uninstall', false );
+$purge_on_uninstall = get_option( 'consent_mode_purge_on_uninstall', false );
 
 if ( $purge_on_uninstall ) {
-	// TODO: Delete all plugin options from wp_options table.
-	// delete_option( 'ru_consent_mode_settings' );
-	// delete_option( 'ru_consent_mode_purge_on_uninstall' );
-	// TODO: Add deletion for other plugin options.
+	// Delete main settings array stored in wp_options.
+	delete_option( 'consent_mode_settings' );
 
-	// TODO: Drop custom database tables for consent logs.
-	global $wpdb;
-	// $table_name = $wpdb->prefix . 'ru_consent_logs';
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange
-	// $wpdb->query( "DROP TABLE IF EXISTS {$table_name}" );
+	// Delete the purge flag itself.
+	delete_option( 'consent_mode_purge_on_uninstall' );
 
-	// TODO: Delete all plugin transients.
-	// delete_transient( 'ru_consent_mode_geo_cache' );
-
-	// TODO: Delete all plugin user meta.
-	// delete_metadata( 'user', 0, 'ru_consent_mode_preferences', '', true );
-
-	// TODO: Clear any scheduled cron events.
-	// wp_clear_scheduled_hook( 'ru_consent_mode_cleanup' );
-
-	// TODO: Remove uploaded files from wp-content/uploads if any.
+	// Delete any geo-detection transients (stored in wp_options, no custom tables).
+	// Transients are prefixed per-session; bulk-remove with a SQL LIKE is not needed
+	// because they expire automatically. We delete only the known named transients.
+	delete_transient( 'consent_mode_geo_cache' );
 
 	// Flush rewrite rules.
 	flush_rewrite_rules();
 }
-
-// TODO: Consider adding a cleanup function that runs regardless of purge_on_uninstall
-// to remove temporary data, caches, etc.

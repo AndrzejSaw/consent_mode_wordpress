@@ -1,13 +1,13 @@
 <?php
 /**
- * Support module for RU Consent Mode plugin.
+ * Support module for Consent Mode plugin.
  *
  * Provides helper functions and utilities used across the plugin.
  *
- * @package RUConsentMode\Support
+ * @package ConsentMode\Support
  */
 
-namespace RUConsentMode\Support;
+namespace ConsentMode\Support;
 
 /**
  * Support class.

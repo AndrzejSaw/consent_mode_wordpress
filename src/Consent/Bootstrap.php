@@ -1,13 +1,13 @@
 <?php
 /**
- * Bootstrap module for RU Consent Mode plugin.
+ * Bootstrap module for Consent Mode plugin.
  *
  * Handles Google Consent Mode v2 initialization and GTM integration.
  *
- * @package RUConsentMode\Consent
+ * @package ConsentMode\Consent
  */
 
-namespace RUConsentMode\Consent;
+namespace ConsentMode\Consent;
 
 /**
  * Bootstrap class for consent mode initialization.
@@ -43,7 +43,7 @@ class Bootstrap {
 	 * Private constructor to prevent direct instantiation.
 	 */
 	private function __construct() {
-		$this->settings = get_option( 'ru_consent_mode_settings', [] );
+		$this->settings = get_option( 'consent_mode_settings', [] );
 	}
 
 	/**
@@ -84,7 +84,7 @@ class Bootstrap {
 		$wait_for_update = absint( $this->get_setting( 'wait_for_update', 500 ) );
 
 		?>
-<!-- RU Consent Mode (GCMv2) - Default Consent State -->
+<!-- Consent Mode (GCMv2) - Default Consent State -->
 <script data-consent-mode="default">
 (function() {
 	'use strict';
@@ -125,11 +125,11 @@ class Bootstrap {
 	
 	// Log consent mode initialization (development only).
 	if (window.console && typeof console.log === 'function') {
-		console.log('[RU Consent Mode] Default consent state initialized:', <?php echo wp_json_encode( $default_consent ); ?>);
+		console.log('[Consent Mode] Default consent state initialized:', <?php echo wp_json_encode( $default_consent ); ?>);
 	}
 })();
 </script>
-<!-- End RU Consent Mode - Default Consent State -->
+<!-- End Consent Mode - Default Consent State -->
 		<?php
 	}
 
@@ -156,7 +156,7 @@ class Bootstrap {
 		if ( empty( $gtm_container_id ) || ! $this->validate_gtm_id( $gtm_container_id ) ) {
 			// Log error in debug mode.
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( '[RU Consent Mode] Invalid or missing GTM container ID: ' . $gtm_container_id );
+				error_log( '[Consent Mode] Invalid or missing GTM container ID: ' . $gtm_container_id );
 			}
 			return;
 		}
@@ -173,12 +173,12 @@ class Bootstrap {
 		$gtm_params = $this->build_gtm_params( $gtm_auth, $gtm_preview, $gtm_cookies_win );
 
 		?>
-<!-- Google Tag Manager (RU Consent Mode) -->
+<!-- Google Tag Manager (Consent Mode) -->
 <script data-gtm-id="<?php echo esc_attr( $gtm_id ); ?>">
 (function(w,d,s,l,i){
 	// Prevent duplicate GTM injection.
 	if (w.google_tag_manager && w.google_tag_manager[i]) {
-		console.warn('[RU Consent Mode] GTM container already loaded:', i);
+		console.warn('[Consent Mode] GTM container already loaded:', i);
 		return;
 	}
 	
@@ -194,7 +194,7 @@ class Bootstrap {
 	
 	// Add error handling for GTM script loading.
 	j.onerror = function() {
-		console.error('[RU Consent Mode] Failed to load GTM container:', i);
+		console.error('[Consent Mode] Failed to load GTM container:', i);
 	};
 	
 	f.parentNode.insertBefore(j,f);
@@ -261,7 +261,7 @@ class Bootstrap {
 	 */
 	private function get_default_consent_state() {
 		// Get user's country code from Geo module.
-		$geo          = \RUConsentMode\Geo\Geo::instance();
+		$geo          = \ConsentMode\Geo\Geo::instance();
 		$country_code = $geo->get_country_code();
 
 		// Determine if user is in a region requiring strict consent (EEA, PL, UA, BY, RU).
@@ -280,7 +280,7 @@ class Bootstrap {
 
 		// Allow customization via filter.
 		$default_consent = apply_filters(
-			'ru_consent_mode_default_consent',
+			'consent_mode_default_consent',
 			$default_consent,
 			$country_code,
 			$is_strict_region

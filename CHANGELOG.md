@@ -1,268 +1,130 @@
-# Changelog
+﻿# Changelog
 
-All notable changes to RU Consent Mode (GCMv2) will be documented in this file.
+Wszystkie istotne zmiany w projekcie **Universal Consent Mode (GCMv2)** dokumentowane sÄ… w tym pliku.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Format oparty na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/).  
+Wersjonowanie zgodne z [Semantic Versioning](https://semver.org/lang/pl/).
+
+---
 
 ## [Unreleased]
 
-### Planned
-- Admin panel UI for settings management
-- Frontend consent banner with customization
-- REST API endpoints for consent management
-- Multi-language support (Russian, English, German, French)
-- Consent logs viewer in admin panel
-- Analytics dashboard for consent statistics
-- Export/Import plugin settings
-- Integration with popular WordPress plugins
-
-## [1.0.0] - 2025-10-23
-
-### Added - Bootstrap Module
-
-#### Core Functionality
-- ✅ **Bootstrap Module** (`src/Consent/Bootstrap.php`)
-  - Google Consent Mode v2 initialization
-  - dataLayer creation with duplicate prevention
-  - gtag() function stub implementation
-  - Default consent state (privacy-first approach)
-  - Google Tag Manager integration
-  - Environment-specific GTM parameters support
-
-#### WordPress Integration
-- ✅ **wp_head Hook (Priority 0)**
-  - Creates `window.dataLayer` if not exists
-  - Defines `gtag()` function
-  - Sets default consent state:
-    - `ad_storage`: denied
-    - `ad_user_data`: denied
-    - `ad_personalization`: denied
-    - `analytics_storage`: denied
-    - `functionality_storage`: granted
-    - `personalization_storage`: denied
-    - `security_storage`: granted
-  - Applies `ads_data_redaction`: true
-  - Configurable `wait_for_update` time
-
-- ✅ **wp_head Hook (Priority 5)**
-  - Loads GTM container when configured
-  - Validates GTM container ID format (GTM-XXXXXXX)
-  - Prevents duplicate GTM loading
-  - Supports staging/preview parameters:
-    - `gtm_auth`
-    - `gtm_preview`
-    - `gtm_cookies_win`
-
-- ✅ **wp_body_open Hook**
-  - GTM noscript iframe fallback
-  - For users with JavaScript disabled
-
-#### Configuration
-- ✅ Settings structure via `wp_options`
-  - `inject_gtm_loader` - Enable/disable GTM injection
-  - `gtm_container_id` - GTM container ID
-  - `gtm_auth` - Environment auth parameter
-  - `gtm_preview` - Preview mode parameter
-  - `gtm_cookies_win` - Cookies win parameter
-  - `ads_data_redaction` - Enable ads data redaction
-  - `url_passthrough` - Enable URL passthrough
-  - `wait_for_update` - Wait time in milliseconds
-
-#### Security
-- ✅ GTM container ID validation (regex pattern)
-- ✅ Output escaping (`esc_js()`, `esc_attr()`)
-- ✅ JSON encoding with proper flags
-- ✅ Duplicate loading prevention
-- ✅ Error handling and logging
-
-#### Documentation
-- ✅ **Technical Documentation** (`TECHNICAL.md`)
-  - Complete technical specification
-  - Architecture overview
-  - Module documentation
-  - API reference
-  - Security guidelines
-  - Performance optimization
-  - Deployment instructions
-
-- ✅ **Quick Start Guide** (`docs/QUICK_START.md`)
-  - Fast setup instructions
-  - Configuration examples
-  - Testing procedures
-  - Troubleshooting guide
-
-- ✅ **README Documentation** (`README.md`)
-  - Project overview
-  - Feature list
-  - Installation guide
-  - Quick start
-  - Architecture diagram
-  - Browser support
-
-- ✅ **Examples** (`examples/`)
-  - `settings-example.php` - Configuration examples
-  - `README.md` - Usage examples and best practices
-
-- ✅ **Testing Tools**
-  - `tests/manual/test-page.html` - Interactive test page
-  - Browser console testing guide
-  - GTM Preview mode instructions
-
-### Project Structure
-
-#### Files Created
-```
-ru-consent-mode/
-├── ru-consent-mode.php           ✅ Main plugin file
-├── uninstall.php                 ✅ Uninstall script
-├── composer.json                 ✅ Composer configuration
-├── README.md                     ✅ Project readme
-├── TECHNICAL.md                  ✅ Technical documentation
-├── CHANGELOG.md                  ✅ This file
-├── src/
-│   ├── Admin/Admin.php          ✅ Admin module (skeleton)
-│   ├── Front/Front.php          ✅ Front module (skeleton)
-│   ├── Consent/
-│   │   ├── Consent.php          ✅ Consent module (skeleton)
-│   │   └── Bootstrap.php        ✅ Bootstrap module (implemented)
-│   ├── Geo/Geo.php              ✅ Geo module (skeleton)
-│   ├── Log/Log.php              ✅ Log module (skeleton)
-│   └── Support/Support.php      ✅ Support module (skeleton)
-├── assets/
-│   ├── css/banner.css           ✅ Banner styles
-│   ├── js/banner.js             ✅ Banner JavaScript
-│   └── img/                     ✅ Images directory
-├── languages/
-│   └── README.md                ✅ Translation guide
-├── docs/
-│   ├── README.md                ✅ Documentation index
-│   └── QUICK_START.md           ✅ Quick start guide
-├── examples/
-│   ├── README.md                ✅ Examples guide
-│   └── settings-example.php     ✅ Configuration examples
-├── tests/
-│   └── manual/
-│       └── test-page.html       ✅ Interactive test page
-└── readme.txt                   ✅ WordPress.org readme
-```
-
-#### Namespace Structure
-```
-RUConsentMode\
-├── Admin\           - Admin panel functionality
-├── Front\           - Frontend user interface
-├── Consent\         - Consent management
-│   └── Bootstrap    - ✅ Consent Mode initialization
-├── Geo\             - Geolocation detection
-├── Log\             - Event logging
-└── Support\         - Helper utilities
-```
-
-### Standards Compliance
-
-- ✅ **WordPress 6.2+** compatibility
-- ✅ **PHP 8.1+** requirement
-- ✅ **WordPress Coding Standards** (WPCS)
-- ✅ **PSR-4 Autoloading**
-- ✅ **Semantic Versioning**
-- ✅ **GPL v2** license
-
-### Technical Highlights
-
-#### Google Consent Mode v2 Integration
-```javascript
-// Default consent state (privacy-first)
-gtag('consent', 'default', {
-    'ad_storage': 'denied',
-    'ad_user_data': 'denied',
-    'ad_personalization': 'denied',
-    'analytics_storage': 'denied',
-    'functionality_storage': 'granted',
-    'personalization_storage': 'denied',
-    'security_storage': 'granted'
-});
-
-// Additional settings
-gtag('set', 'ads_data_redaction', true);
-```
-
-#### GTM Container Loading
-```javascript
-// Async GTM loading with duplication check
-if (!w.google_tag_manager || !w.google_tag_manager[i]) {
-    // Load GTM container
-}
-```
-
-#### No Duplication
-```javascript
-// Smart dataLayer detection
-window.dataLayer = window.dataLayer || [];
-
-// gtag() stub if not exists
-if (typeof window.gtag === 'undefined') {
-    window.gtag = gtag;
-}
-```
-
-### Testing
-
-- ✅ Manual testing via test page
-- ✅ Browser console verification
-- ✅ GTM Preview mode compatibility
-- ✅ Multiple browser testing
-- ⏳ Automated PHPUnit tests (planned)
-- ⏳ Integration tests (planned)
-- ⏳ E2E tests (planned)
-
-### Known Limitations
-
-- Admin panel UI not yet implemented
-- Frontend banner not yet implemented
-- Geolocation detection not yet implemented
-- Consent logging not yet implemented
-- REST API not yet implemented
-- Multi-language support not yet implemented
-
-### Migration Notes
-
-This is the initial release. No migration required.
-
-### Breaking Changes
-
-None - initial release.
+### Planowane
+- Eksport/import ustawieĹ„ (.json)
+- Panel przeglÄ…du logĂłw diagnostycznych (WP_DEBUG)
+- Integracja z popularnymi wtyczkami (WooCommerce, Contact Form 7)
+- Unit testy PHPUnit
 
 ---
 
-## Version History Summary
+## [1.1.0] â€” 2026-02-26
 
-| Version | Date | Status | Key Features |
-|---------|------|--------|--------------|
-| 1.0.0 | 2025-10-23 | ✅ Released | Bootstrap module, GTM integration, Consent Mode v2 |
-| 1.1.0 | TBD | 🔄 Planned | Admin panel, Frontend banner, REST API |
-| 1.2.0 | TBD | 📋 Planned | Multi-language, Analytics, Export/Import |
-| 2.0.0 | TBD | 📋 Planned | Multi-site, Advanced features |
+### Zmieniono (Breaking Changes)
+- **Zmiana nazwy pliku gĹ‚Ăłwnego**: `ru-consent-mode.php` â†’ `consent-mode.php`
+- **Zmiana przestrzeni nazw PHP**: `RUConsentMode\` â†’ `ConsentMode\`
+- **Zmiana nazw staĹ‚ych**: `RU_CONSENT_MODE_*` â†’ `CONSENT_MODE_*`
+- **Zmiana nazwy opcji WP**: `ru_consent_mode_settings` â†’ `consent_mode_settings`
+- **Zmiana nazwy cookie**: `ru_consent_preferences` â†’ `consent_preferences`
+- **Zmiana tekst domain**: `ru-consent-mode` â†’ `consent-mode`
+- **Zmiana obiektu JS**: `window.ruConsentMode` â†’ `window.consentMode`
+- Stary plik `ru-consent-mode.php` zastÄ…piony stubem deprecacji z komunikatem admina
+
+> âš ď¸Ź UĹĽytkownicy wersji 1.0.x muszÄ… dezaktywowaÄ‡ stary plugin i aktywowaÄ‡
+> `consent-mode.php`. Ustawienia w `wp_options` bÄ™dÄ… wymagaĹ‚y jednorazowego
+> przepisania (zresetujÄ… siÄ™ do domyĹ›lnych).
+
+### Dodano
+- Czwarty jÄ™zyk: **UkraiĹ„ski (UA)** we wszystkich moduĹ‚ach i18n
+- Natywny element `<dialog>` dla okna preferencji (bez bibliotek zewnÄ™trznych)
+- Model **3-przyciskowy**: Tylko niezbÄ™dne / Marketing / Akceptuj wszystko
+- Przycisk "Dostosuj" otwierajÄ…cy modalne okno granularnych ustawieĹ„
+- StaĹ‚y przycisk odwoĹ‚ania zgody z atrybutem `hidden` (RODO art. 7)
+- PodwĂłjny atrybut blokowania skryptĂłw: `data-rcm-consent` + `data-consent-category`
+- Normalizacja nazw kategorii: `marketingâ†’ads`, `advertisingâ†’ads`, `statisticsâ†’analytics`
+- Language Manager â€” tabbed UI (EN/RU/UA/PL Ă— 14 pĂłl w panelu admina)
+- Metoda `Consent::has_made_choice()` â€” wykrywa pierwszÄ… wizytÄ™
+- Metoda `Consent::flush_cache()` â€” czyszczenie cache runtime
+- StaĹ‚e `Consent::ALWAYS_GRANTED` = `['functionality_storage', 'security_storage']`
+- Zdarzenie JS `consentUpdated` (CustomEvent z `detail = {ad_storage, ...}`)
+- Publiczne API JS: `window.ConsentBanner.{openModal, showBanner, readConsentCookie, applyConsent}`
+- `wp_script_add_data( $handle, 'consent-category', 'analytics' )` â€” rejestracja kategorii bez CSV
+- Tryb debug: `Log::write()` i `Log::log_consent()` â€” tylko gdy `WP_DEBUG=true`
+- Guard `is_admin()` w `Front::init()` â€” brak Ĺ‚adowania zasobĂłw w panelu WP
+- Autoloader with fallback dla instalacji bez Composer
+
+### Naprawiono
+- **ReferenceError: `saveBtn` is not defined** â€” deklaracja przeniesiona wewnÄ…trz `attachEventListeners()`
+- RozbieĹĽnoĹ›Ä‡ nazw cookie miÄ™dzy `Consent.php`, `Front.php` i `banner.js`
+- PodwĂłjne Ĺ‚adowanie zasobĂłw banera w panelu administracyjnym
+- Zduplikowana rejestracja sekcji ustawieĹ„ w `Admin.php`
+- PozostaĹ‚oĹ›ci starego kodu po nieudanym rewrite w pliku `banner.js` (obciÄ™to do 560 linii)
+- Dodatkowy `}` na koĹ„cu pliku `Consent.php` (unmatched brace error)
+- Przycisk odwoĹ‚ania z `style="display:none"` â†’ `hidden` atrybut (spĂłjnoĹ›Ä‡ z JS)
+- `activate()`: usuniÄ™te TODO-komentarze dla operacji bazodanowych, dodano domyĹ›lne ustawienia
+
+### UsuniÄ™to
+- **CaĹ‚y mechanizm AJAX**: `wp_ajax_ru_consent_mode_submit`, `sendConsentToBackend()`, `nonce`
+- Tabele bazodanowe z `Log.php` (`$wpdb`, `create_table()`, `get_logs()`, `delete_old_logs()`)
+- `DROP TABLE` i `global $wpdb` z `uninstall.php`
+- Stary wzorzec obiektĂłw w `banner.js` â€” zastÄ…piony przez moduĹ‚ ES6+
+- Metody AJAX z `Front.php`: `handle_consent_submission()`, `wp_ajax_*` hooks
+- StaĹ‚e `STATUS.md` â€” przestarzaĹ‚e notatki deweloperskie w jÄ™zyku rosyjskim
+
+### Refaktoryzacja (bez zmiany API)
+- `Consent.php`: kompletny przepisanie na czytnik bezstanowy â€” tylko `$_COOKIE`
+- `Log.php`: usuniecie `$wpdb`, zastÄ…pione przez `error_log()` gdy `WP_DEBUG`
+- `uninstall.php`: wyĹ‚Ä…cznie `delete_option()`, brak operacji DB
+- `banner.js`: kompletne przepisanie ES6+ (561 linii), bez jQuery, bez AJAX
+- `Front.php`: nowy HTML banera, `<dialog>` modal, prywatne helpery i18n
+- `ScriptGuard.php`: 3-etapowa rozdzielnoĹ›Ä‡ kategorii, metoda `normalize_category()`
+- `Admin.php`: Language Manager z tabbed UI, `sanitize_settings()` dla 4 jÄ™zykĂłw
+
+### Dokumentacja
+- Nowy `README_PL.md` â€” kompleksowa dokumentacja polska z wzorcowÄ… politykÄ… cookies
+- Zaktualizowany `README.md` â€” usuniÄ™to referencje AJAX, dodano UA, zaktualizowano API
+- Nowy plik `docs/POLITYKA_COOKIES.md` â€” samodzielna polityka cookies (RODO + PKE 2024)
+- Zaktualizowany `readme.txt` â€” WordPress.org format
+- UsuniÄ™ty `STATUS.md` â€” przestarzaĹ‚e notatki deweloperskie
 
 ---
 
-## Legend
+## [1.0.0] â€” 2025-10-23
 
-- ✅ Implemented
-- 🔄 In Progress
-- 📋 Planned
-- ⏳ Pending
-- ❌ Deprecated/Removed
+### Dodano â€” ModuĹ‚ Bootstrap
+
+#### FunkcjonalnoĹ›Ä‡ podstawowa
+- ModuĹ‚ Bootstrap (`src/Consent/Bootstrap.php`)
+  - Inicjalizacja Google Consent Mode v2
+  - Tworzenie `window.dataLayer` z ochronÄ… przed duplikacjÄ…
+  - Stub funkcji `gtag()`
+  - DomyĹ›lny stan zgody (podejĹ›cie privacy-first): wszystkie `denied` poza `security_storage`
+  - Integracja Google Tag Manager
+  - Wsparcie parametrĂłw GTM dla Ĺ›rodowisk testowych
+
+#### Integracja WordPress
+- Hook `wp_head` (priorytet 0): inicjalizacja GCMv2, `ads_data_redaction`, `wait_for_update`
+- Hook `wp_head` (priorytet 5): Ĺ‚adowanie kontenera GTM, walidacja ID formatu `GTM-*`
+- Hook `wp_body_open`: fallback `<noscript>` GTM
+
+#### Architektura projektu
+- PSR-4 Autoloading przez Composer
+- PrzestrzeĹ„ nazw `ConsentMode\` (zaktualizowana w v1.1.0 z `RUConsentMode\`)
+- WordPress Coding Standards (WPCS)
+- GPL v2
 
 ---
 
-## Links
+## Legenda
 
-- [Unreleased]: https://github.com/yourname/ru-consent-mode/compare/v1.0.0...HEAD
-- [1.0.0]: https://github.com/yourname/ru-consent-mode/releases/tag/v1.0.0
+| Symbol | Znaczenie |
+|--------|-----------|
+| âś… | Zaimplementowane |
+| âš ď¸Ź | Zmiana Ĺ‚amiÄ…ca kompatybilnoĹ›Ä‡ |
+| đź”„ | W trakcie |
+| đź“‹ | Zaplanowane |
 
 ---
 
-**Maintained by:** RU Consent Mode Team  
-**License:** GPL v2 or later  
-**Documentation:** [README.md](README.md) | [TECHNICAL.md](TECHNICAL.md)
+[Unreleased]: https://github.com/yourname/consent-mode/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/yourname/consent-mode/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/yourname/consent-mode/releases/tag/v1.0.0

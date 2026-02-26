@@ -1,18 +1,42 @@
 <?php
 /**
- * Log module for RU Consent Mode plugin.
+ * Log module for Consent Mode plugin.
  *
- * Handles logging of consent events for compliance and audit purposes.
+ * Stateless implementation — no custom database tables are created or used
+ * (No-DB Policy). Consent preferences are stored exclusively in the visitor's
+ * browser via the consent_preferences cookie.
  *
- * @package RUConsentMode\Log
+ * This class provides optional debug-level output through the standard PHP
+ * error_log() when WP_DEBUG is enabled. In production all log calls are
+ * transparent no-ops, keeping zero server-side persistence of consent events.
+ *
+ * @package ConsentMode\Log
  */
 
-namespace RUConsentMode\Log;
+namespace ConsentMode\Log;
 
 /**
  * Log class.
+ *
+ * Lightweight, no-DB logger for development and debugging purposes.
  */
 class Log {
+
+	/**
+	 * Log level constants.
+	 */
+	const LEVEL_DEBUG   = 'DEBUG';
+	const LEVEL_INFO    = 'INFO';
+	const LEVEL_WARNING = 'WARNING';
+	const LEVEL_ERROR   = 'ERROR';
+
+	/**
+	 * Prefix added to every log entry for easy filtering.
+	 *
+	 * @var string
+	 */
+	private const LOG_PREFIX = '[Consent Mode]';
+
 	/**
 	 * Singleton instance.
 	 *
@@ -21,118 +45,77 @@ class Log {
 	private static $instance = null;
 
 	/**
-	 * Database table name.
-	 *
-	 * @var string
-	 */
-	private $table_name;
-
-	/**
 	 * Get singleton instance.
 	 *
 	 * @return Log
 	 */
-	public static function instance() {
+	public static function instance(): Log {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
+
 		return self::$instance;
 	}
 
 	/**
-	 * Private constructor to prevent direct instantiation.
+	 * Private constructor – use instance() to obtain the singleton.
 	 */
-	private function __construct() {
-		global $wpdb;
-		$this->table_name = $wpdb->prefix . 'ru_consent_logs';
-	}
+	private function __construct() {}
 
 	/**
 	 * Initialize the log module.
 	 *
-	 * @return void
-	 */
-	public function init() {
-		// TODO: Create database table on plugin activation.
-	}
-
-	/**
-	 * Create database table for consent logs.
+	 * No WordPress hooks are required for the stateless implementation.
 	 *
 	 * @return void
 	 */
-	public function create_table() {
-		global $wpdb;
+	public function init(): void {}
 
-		$charset_collate = $wpdb->get_charset_collate();
+	/**
+	 * Log a consent change event.
+	 *
+	 * When WP_DEBUG is true the event is written to the PHP error log so
+	 * developers can verify consent flow during development. In production
+	 * this method is a silent no-op — consent events are NOT persisted to
+	 * any database table (No-DB Policy).
+	 *
+	 * @param array  $consent_data Associative array of GCMv2 consent parameters.
+	 * @param string $context      Optional context label (e.g. 'accept_all', 'essential').
+	 * @return void
+	 */
+	public function log_consent( array $consent_data, string $context = '' ): void {
+		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+			return;
+		}
 
-		// TODO: Define table schema with proper columns:
-		// - id (bigint, auto_increment)
-		// - user_id (bigint, nullable for non-logged users)
-		// - ip_address (varchar)
-		// - country_code (varchar)
-		// - consent_data (text, JSON)
-		// - created_at (datetime)
-		// - updated_at (datetime)
-
-		$sql = "CREATE TABLE IF NOT EXISTS {$this->table_name} (
-			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-			user_id bigint(20) unsigned DEFAULT NULL,
-			ip_address varchar(45) NOT NULL,
-			country_code varchar(2) DEFAULT '',
-			consent_data text NOT NULL,
-			created_at datetime NOT NULL,
-			updated_at datetime NOT NULL,
-			PRIMARY KEY (id),
-			KEY user_id (user_id),
-			KEY created_at (created_at)
-		) $charset_collate;";
-
-		// TODO: Use dbDelta() function to create/update table.
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-		// dbDelta( $sql );
+		$this->write(
+			sprintf( 'Consent update [%s]: %s', $context ?: 'unknown', wp_json_encode( $consent_data ) ),
+			self::LEVEL_INFO
+		);
 	}
 
 	/**
-	 * Log consent event.
+	 * Write a generic message to the PHP error log.
 	 *
-	 * @param array $data Consent data to log.
-	 * @return int|false Insert ID on success, false on failure.
+	 * Only active when WP_DEBUG is true.
+	 *
+	 * @param string $message Human-readable message.
+	 * @param string $level   One of the LEVEL_* class constants.
+	 * @param array  $context Optional key-value pairs appended as JSON.
+	 * @return void
 	 */
-	public function log_consent( $data ) {
-		// TODO: Validate data structure.
-		// TODO: Get current user ID if logged in.
-		// TODO: Get user's IP address.
-		// TODO: Get country code from Geo module.
-		// TODO: Insert log entry into database.
-		// TODO: Return insert ID or false on failure.
-		return false;
-	}
+	public function write( string $message, string $level = self::LEVEL_DEBUG, array $context = [] ): void {
+		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+			return;
+		}
 
-	/**
-	 * Get consent logs.
-	 *
-	 * @param array $args Query arguments.
-	 * @return array Consent logs.
-	 */
-	public function get_logs( $args = [] ) {
-		// TODO: Build SQL query based on arguments.
-		// TODO: Support filtering by user_id, date range, country.
-		// TODO: Add pagination support.
-		// TODO: Return array of log entries.
-		return [];
-	}
+		$entry = sprintf( '%s [%s] %s', self::LOG_PREFIX, $level, $message );
 
-	/**
-	 * Delete old logs.
-	 *
-	 * @param int $days Number of days to keep logs.
-	 * @return int Number of deleted rows.
-	 */
-	public function delete_old_logs( $days = 365 ) {
-		// TODO: Calculate cutoff date.
-		// TODO: Delete logs older than cutoff date.
-		// TODO: Return number of deleted rows.
-		return 0;
+		if ( ! empty( $context ) ) {
+			$entry .= ' | ' . wp_json_encode( $context );
+		}
+
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		error_log( $entry );
 	}
 }
