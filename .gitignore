@@ -1,6 +1,6 @@
 # Composer - не коммитим зависимости, только файл конфигурации
 vendor/
-composer.lock
+
 
 # WordPress/Системное
 node_modules/
@@ -22,3 +22,4 @@ coverage/
 *.sublime-workspace
 
 repomix-output.xml
+.repomixignore
