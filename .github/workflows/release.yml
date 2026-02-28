@@ -1,0 +1,32 @@
+name: Build Plugin Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+
+      - name: Install Dependencies (Production)
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Create ZIP Archive
+        run: |
+          zip -r consent-mode.zip . -x "*.git*" ".github/*" "tests/*" "node_modules/*" ".idea/*" ".vscode/*" "repomix-output.xml"
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: consent-mode.zip

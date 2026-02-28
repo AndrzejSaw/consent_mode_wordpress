@@ -18,9 +18,12 @@
 
 namespace ConsentMode;
 
+// ИМПОРТ ДОЛЖЕН БЫТЬ ЗДЕСЬ - на самом верху!
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+    exit;
 }
 
 /**
@@ -49,34 +52,53 @@ define( 'CONSENT_MODE_BASENAME', plugin_basename( __FILE__ ) );
  * @return void
  */
 function autoload() {
-	$autoload_file = CONSENT_MODE_DIR . 'vendor/autoload.php';
+    $autoload_file = CONSENT_MODE_DIR . 'vendor/autoload.php';
 
-	if ( file_exists( $autoload_file ) ) {
-		require_once $autoload_file;
-	} else {
-		// Fallback manual autoloader if Composer autoload is not available.
-		spl_autoload_register(
-			function ( $class ) {
-				$prefix   = 'ConsentMode\\';
-				$base_dir = CONSENT_MODE_DIR . 'src/';
+    if ( file_exists( $autoload_file ) ) {
+        require_once $autoload_file;
+    } else {
+        // Fallback manual autoloader if Composer autoload is not available.
+        spl_autoload_register(
+            function ( $class ) {
+                $prefix   = 'ConsentMode\\';
+                $base_dir = CONSENT_MODE_DIR . 'src/';
 
-				$len = strlen( $prefix );
-				if ( strncmp( $prefix, $class, $len ) !== 0 ) {
-					return;
-				}
+                $len = strlen( $prefix );
+                if ( strncmp( $prefix, $class, $len ) !== 0 ) {
+                    return;
+                }
 
-				$relative_class = substr( $class, $len );
-				$file           = $base_dir . str_replace( '\\', '/', $relative_class ) . '.php';
+                $relative_class = substr( $class, $len );
+                $file           = $base_dir . str_replace( '\\', '/', $relative_class ) . '.php';
 
-				if ( file_exists( $file ) ) {
-					require $file;
-				}
-			}
-		);
-	}
+                if ( file_exists( $file ) ) {
+                    require $file;
+                }
+            }
+        );
+    }
 }
 
 autoload();
+
+// --- НАСТРОЙКА ОБНОВЛЕНИЙ ЧЕРЕЗ GITHUB ---
+
+// Добавим проверку class_exists, чтобы плагин не "падал", если папка vendor не загрузилась
+if ( class_exists( PucFactory::class ) ) {
+    $myUpdateChecker = PucFactory::buildUpdateChecker(
+        'https://github.com/AndrzejSaw/consent_mode_wordpress/',
+        __FILE__,
+        'consent-mode'
+    );
+
+    // Указываем, что скачивать нужно именно готовый ZIP из релизов
+    $myUpdateChecker->getVcsApi()->enableReleaseAssets();
+
+    // Так как репозиторий приватный, берем токен из wp-config.php клиентского сайта
+    if ( defined( 'MY_GH_TOKEN' ) ) {
+        $myUpdateChecker->setAuthentication( MY_GH_TOKEN );
+    }
+}
 
 /**
  * Initialize plugin modules.
