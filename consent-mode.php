@@ -94,10 +94,6 @@ if ( class_exists( PucFactory::class ) ) {
     // Указываем, что скачивать нужно именно готовый ZIP из релизов
     $myUpdateChecker->getVcsApi()->enableReleaseAssets();
 
-    // Так как репозиторий приватный, берем токен из wp-config.php клиентского сайта
-    if ( defined( 'MY_GH_TOKEN' ) ) {
-        $myUpdateChecker->setAuthentication( MY_GH_TOKEN );
-    }
 }
 
 /**
